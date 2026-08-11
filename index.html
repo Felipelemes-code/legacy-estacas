@@ -106,15 +106,10 @@
   <div class="lg">E</div>
   <h1>Acompanhamento de Estacas</h1>
   <p>Projeto Legacy · Nestlé Araras · Engeko</p>
+  <label>Seu nome</label><input id="lg-name" placeholder="Ex.: João">
   <label>Código de acesso</label><input id="lg-code" type="password" placeholder="Código da obra" autocomplete="off">
   <div id="lg-err" style="display:none;color:#e0556a;font-size:12.5px;font-weight:700;margin:-4px 0 10px">Código incorreto.</div>
-  <label>Seu nome</label><input id="lg-name" placeholder="Ex.: João (apontador)">
-  <label>Perfil de acesso</label>
-  <div class="roles" id="lg-roles">
-    <button data-r="apontador" class="on">Apontador<small>lança estacas</small></button>
-    <button data-r="gestao">Gestão<small>vê painéis</small></button>
-    <button data-r="admin">Admin<small>tudo</small></button>
-  </div>
+  <div id="lg-who" style="display:none;font-size:12.5px;font-weight:700;margin:-4px 0 10px;color:var(--brand)"></div>
   <button class="enter" id="lg-enter">Entrar</button>
   <div class="ro-note" style="margin-top:16px">Dados sincronizados na nuvem — todos os aparelhos veem a mesma informação.</div>
 </div>
@@ -227,13 +222,18 @@ const canEdit=()=>user&&(user.role==='apontador'||user.role==='admin');
 function btUsage(){const m={};for(const k in state){const s=state[k];[['bt1','vol1'],['bt2','vol2']].forEach(([bn,vn])=>{const nf=(s[bn]||'').trim();if(!nf)return;if(!m[nf])m[nf]={est:new Set(),util:0};m[nf].est.add(k);m[nf].util+=(s[vn]||0);});}return m;}
 
 // LOGIN
-$('#lg-roles').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$$('#lg-roles button').forEach(x=>x.classList.remove('on'));b.classList.add('on');lgRole=b.dataset.r;});
-const ACCESS_CODE='LEGACY2026';
-$('#lg-code').addEventListener('input',()=>$('#lg-err').style.display='none');
+// Cada código define o nível de acesso da pessoa
+const CODES={'ESTACA-2026':'apontador','GESTAO-2026':'gestao','ADMIN-2026':'admin'};
+const ROLE_LABEL={apontador:'Apontador — lança estacas',gestao:'Gestão — visualiza painéis',admin:'Admin — acesso total'};
+$('#lg-code').addEventListener('input',()=>{$('#lg-err').style.display='none';
+ const r=CODES[($('#lg-code').value||'').trim().toUpperCase()];
+ const w=$('#lg-who');if(r){w.textContent='✓ '+ROLE_LABEL[r];w.style.display='block';}else{w.style.display='none';}});
 $('#lg-code').addEventListener('keydown',e=>{if(e.key==='Enter')$('#lg-enter').click();});
 $('#lg-enter').onclick=()=>{
- if(($('#lg-code').value||'').trim().toUpperCase()!==ACCESS_CODE){$('#lg-err').style.display='block';$('#lg-code').focus();return;}
- const n=$('#lg-name').value.trim()||'Apontador';user={name:n,role:lgRole};localStorage.setItem(UKEY,JSON.stringify(user));startApp();};
+ const role=CODES[($('#lg-code').value||'').trim().toUpperCase()];
+ if(!role){$('#lg-err').style.display='block';$('#lg-code').focus();return;}
+ const n=$('#lg-name').value.trim()||ROLE_LABEL[role].split(' ')[0];
+ user={name:n,role};localStorage.setItem(UKEY,JSON.stringify(user));startApp();};
 function startApp(){$('#login').classList.add('hidden');$('#appwrap').classList.remove('hidden');
  $('#hd-user').textContent=user.name.split(' ')[0]+' · '+({apontador:'Apont.',gestao:'Gestão',admin:'Admin'}[user.role]);
  chips();render();dash();expSum();setSync(sbOn()?'ok':'err');}
