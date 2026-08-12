@@ -89,6 +89,7 @@
 .sheet h3{margin:0 0 2px;font-size:19px}.sheet .sub{color:var(--muted);font-size:12.5px;margin-bottom:14px}
 .fld{margin-bottom:12px}.fld label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-2);font-weight:700;display:block;margin-bottom:5px}
 .inp{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:11px;padding:12px;font:inherit;font-size:16px;color:var(--text)}
+textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .btbox{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:9px 10px 1px;margin-bottom:10px}
 .btbox .btlab{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--brand);margin-bottom:6px}
@@ -163,6 +164,8 @@
       <div class="card"><h3>Estacas por dia <small>· prev × real</small></h3><div class="cols" id="byday"></div>
         <div class="leg"><span><i style="background:#C9CCE0"></i>Previsto</span><span><i style="background:var(--brand)"></i>Realizado</span></div></div>
       <div class="card"><h3>Concreto por dia (m³)</h3><div class="cols" id="byconc"></div></div>
+      <div class="card"><h3>Desperdício de concreto por dia <small>· usado × teórico</small></h3><div id="bywaste"></div>
+        <p style="color:var(--muted);font-size:12px;margin:9px 2px 0">🔴 acende quando a perda do dia passa de <b>30%</b> (volume usado bem acima do teórico).</p></div>
     </section>
     <!-- EXPORT -->
     <section class="view" id="v-exp">
@@ -172,6 +175,13 @@
         <p style="color:var(--muted);font-size:13px;margin:6px 0 0">Gera um arquivo <b>.CSV</b> (abre no Excel) com todas as estacas, status, datas, volumes e consumo.</p>
         <p style="color:var(--muted);font-size:12px" id="exp-sum"></p>
         <button class="btn pri" id="btn-export" style="margin-top:6px"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 10l5 5 5-5M5 21h14"/></svg>Baixar planilha (.csv)</button>
+      </div>
+      <div class="exp" style="margin-top:14px">
+        <svg viewBox="0 0 24 24" style="color:#25D366"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 21l2.1-5.4A8.5 8.5 0 1 1 21 11.5z"/></svg>
+        <h3 style="margin:0">Resumo do dia (WhatsApp)</h3>
+        <p style="color:var(--muted);font-size:13px;margin:6px 0 0">Gera um texto pronto com as estacas executadas no dia para você <b>colar no grupo</b>.</p>
+        <input type="date" id="wa-date" class="inp" style="max-width:220px;margin:10px auto 0">
+        <button class="btn pri" id="btn-wa" style="margin-top:10px;background:#25D366;color:#08351d"><svg viewBox="0 0 24 24"><path d="M8 12h8M8 8h8M8 16h5M4 4h16v12H7l-3 3z"/></svg>Copiar resumo do dia</button>
       </div>
       <div class="ro-note">Os dados são gravados no banco compartilhado (Supabase) e atualizam em todos os aparelhos automaticamente.</div>
     </section>
@@ -188,11 +198,15 @@
   <div class="grip"></div><h3 id="m-id">E-01</h3><div class="sub" id="m-sub"></div>
   <div class="fld"><label>Status</label><div class="togg" id="m-st"><button data-v="Programada" class="on">Programada</button><button data-v="Executada">Executada ✓</button></div></div>
   <div class="row2"><div class="fld"><label>Data</label><input class="inp" id="m-data" type="date"></div><div class="fld"><label>Comp. exec. (m)</label><input class="inp" id="m-comp" type="number" step="0.1"></div></div>
+  <div class="row2"><div class="fld"><label>Bloco</label><input class="inp" id="m-bloco" placeholder="ex.: B12"></div><div class="fld"><label>Pilar</label><input class="inp" id="m-pilar" placeholder="ex.: P12"></div></div>
   <div class="btbox"><div class="btlab">BT 1 <small>(caminhão principal)</small></div>
-    <div class="row2"><div class="fld"><label>Nº NF / BT</label><input class="inp" id="m-bt1" placeholder="ex.: 1234"></div><div class="fld"><label>Vol. usado (m³)</label><input class="inp" id="m-vol1" type="number" step="0.01"></div></div></div>
+    <div class="row2"><div class="fld"><label>Nº BT</label><input class="inp" id="m-bt1" placeholder="caminhão"></div><div class="fld"><label>Nº NF</label><input class="inp" id="m-nf1" placeholder="nota fiscal"></div></div>
+    <div class="row2"><div class="fld"><label>Chegada na obra</label><input class="inp" id="m-hora1" type="time"></div><div class="fld"><label>Vol. usado (m³)</label><input class="inp" id="m-vol1" type="number" step="0.01"></div></div></div>
   <div class="btbox"><div class="btlab">BT 2 <small>(transição — opcional)</small></div>
-    <div class="row2"><div class="fld"><label>Nº NF / BT</label><input class="inp" id="m-bt2" placeholder="se dividiu 2 BTs"></div><div class="fld"><label>Vol. usado (m³)</label><input class="inp" id="m-vol2" type="number" step="0.01"></div></div></div>
+    <div class="row2"><div class="fld"><label>Nº BT</label><input class="inp" id="m-bt2" placeholder="se dividiu 2 BTs"></div><div class="fld"><label>Nº NF</label><input class="inp" id="m-nf2" placeholder="nota fiscal"></div></div>
+    <div class="row2"><div class="fld"><label>Chegada na obra</label><input class="inp" id="m-hora2" type="time"></div><div class="fld"><label>Vol. usado (m³)</label><input class="inp" id="m-vol2" type="number" step="0.01"></div></div></div>
   <div class="row2"><div class="fld"><label>Início concr.</label><input class="inp" id="m-ini" type="time"></div><div class="fld"><label>Término</label><input class="inp" id="m-fim" type="time"></div></div>
+  <div class="fld"><label>Ocorrências / observações</label><textarea class="inp" id="m-ocor" rows="2" placeholder="Ex.: paralisação por chuva, troca de trado, interferência..."></textarea></div>
   <div class="calc"><div class="b"><div class="v num" id="m-teor">—</div><div class="l">Vol. teórico</div></div><div class="b"><div class="v num" id="m-cons">—</div><div class="l">Consumo</div></div><div class="b"><span class="sit" id="m-sit">—</span></div></div>
   <div class="mf"><button class="btn gh" id="m-cancel">✕</button><button class="btn pri" id="m-save"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Salvar</button></div>
 </div></div>
@@ -220,11 +234,11 @@ let user=JSON.parse(localStorage.getItem(UKEY)||'null');
 let curFr='',curStatus='',curId=null,limit=40,lgRole='apontador';
 async function loadAll(){
  if(!sbOn())return;
- const es=await sbSelect('estacas');state={};es.forEach(r=>{state[r.k]={st:r.status,data:r.data_exec||'',bt1:r.bt1||'',vol1:r.vol1,bt2:r.bt2||'',vol2:r.vol2,comp:r.comp_exec,ini:r.ini||'',fim:r.fim||''};});
+ const es=await sbSelect('estacas');state={};es.forEach(r=>{state[r.k]={st:r.status,data:r.data_exec||'',bloco:r.bloco||'',pilar:r.pilar||'',bt1:r.bt1||'',nf1:r.nf1||'',hora1:r.hora1||'',vol1:r.vol1,bt2:r.bt2||'',nf2:r.nf2||'',hora2:r.hora2||'',vol2:r.vol2,comp:r.comp_exec,ini:r.ini||'',fim:r.fim||'',ocor:r.ocorrencia||''};});
  const bs=await sbSelect('betoneiras');btState={};bs.forEach(r=>btState[r.nf]={entregue:r.entregue});
 }
 async function upsertEstaca(k){const s=state[k],p=PILES.find(x=>x.k===k);setSync('...');
- try{await sbUpsert('estacas',{k,frente:p.fr,nome:p.id,status:s.st,data_exec:s.data||null,bt1:s.bt1||null,vol1:s.vol1,bt2:s.bt2||null,vol2:s.vol2,comp_exec:s.comp,ini:s.ini||null,fim:s.fim||null,updated_by:user?user.name:null});setSync('ok');}
+ try{await sbUpsert('estacas',{k,frente:p.fr,nome:p.id,status:s.st,data_exec:s.data||null,bloco:s.bloco||null,pilar:s.pilar||null,bt1:s.bt1||null,nf1:s.nf1||null,hora1:s.hora1||null,vol1:s.vol1,bt2:s.bt2||null,nf2:s.nf2||null,hora2:s.hora2||null,vol2:s.vol2,comp_exec:s.comp,ini:s.ini||null,fim:s.fim||null,ocorrencia:s.ocor||null,updated_by:user?user.name:null});setSync('ok');}
  catch(e){setSync('err');toast('⚠ Falha ao salvar na nuvem');}}
 async function upsertBt(nf){try{await sbUpsert('betoneiras',{nf,entregue:btState[nf].entregue});setSync('ok');}catch(e){setSync('err');}}
 function setSync(s){const el=$('#sync');if(!el)return;el.className='sync '+(s==='ok'?'s-ok':s==='err'?'s-err':'s-wait');el.textContent=s==='ok'?'● sincronizado':s==='err'?'● offline':'● salvando…';}
@@ -280,9 +294,11 @@ function openSheet(k){curId=k;const p=PILES.find(x=>x.k===k);const s=state[k]||{
  $('#m-id').textContent=p.id;$('#m-sub').textContent=`${p.fr} · Ø${p.d} mm · projeto ${p.c} m`;
  $$('#m-st button').forEach(b=>b.classList.toggle('on',b.dataset.v===(s.st||'Programada')));
  $('#m-data').value=s.data||new Date().toISOString().slice(0,10);$('#m-comp').value=s.comp||p.c;
- $('#m-bt1').value=s.bt1||'';$('#m-vol1').value=s.vol1||'';$('#m-bt2').value=s.bt2||'';$('#m-vol2').value=s.vol2||'';
- $('#m-ini').value=s.ini||'';$('#m-fim').value=s.fim||'';
- const ro=!canEdit();$$('#ov input,#m-st button').forEach(el=>el.disabled=ro);$('#m-save').style.display=ro?'none':'flex';
+ $('#m-bloco').value=s.bloco||'';$('#m-pilar').value=s.pilar||'';
+ $('#m-bt1').value=s.bt1||'';$('#m-nf1').value=s.nf1||'';$('#m-hora1').value=s.hora1||'';$('#m-vol1').value=s.vol1||'';
+ $('#m-bt2').value=s.bt2||'';$('#m-nf2').value=s.nf2||'';$('#m-hora2').value=s.hora2||'';$('#m-vol2').value=s.vol2||'';
+ $('#m-ini').value=s.ini||'';$('#m-fim').value=s.fim||'';$('#m-ocor').value=s.ocor||'';
+ const ro=!canEdit();$$('#ov input,#ov textarea,#m-st button').forEach(el=>el.disabled=ro);$('#m-save').style.display=ro?'none':'flex';
  mcalc();$('#ov').classList.add('on');}
 function mcalc(){const p=PILES.find(x=>x.k===curId);const comp=parseFloat($('#m-comp').value)||p.c;
  const v1=parseFloat($('#m-vol1').value)||0,v2=parseFloat($('#m-vol2').value)||0,vol=v1+v2;
@@ -293,7 +309,7 @@ $$('#m-comp,#m-vol1,#m-vol2').forEach(el=>el.addEventListener('input',mcalc));
 $('#m-st').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;$$('#m-st button').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
 $('#m-cancel').onclick=()=>$('#ov').classList.remove('on');$('#ov').onclick=e=>{if(e.target.id==='ov')$('#ov').classList.remove('on');};
 $('#m-save').onclick=()=>{const st=$('#m-st button.on').dataset.v;const p=PILES.find(x=>x.k===curId);
- state[curId]={st,data:$('#m-data').value,bt1:$('#m-bt1').value.trim(),vol1:parseFloat($('#m-vol1').value)||null,bt2:$('#m-bt2').value.trim(),vol2:parseFloat($('#m-vol2').value)||null,comp:parseFloat($('#m-comp').value)||null,ini:$('#m-ini').value,fim:$('#m-fim').value};
+ state[curId]={st,data:$('#m-data').value,bloco:$('#m-bloco').value.trim(),pilar:$('#m-pilar').value.trim(),bt1:$('#m-bt1').value.trim(),nf1:$('#m-nf1').value.trim(),hora1:$('#m-hora1').value,vol1:parseFloat($('#m-vol1').value)||null,bt2:$('#m-bt2').value.trim(),nf2:$('#m-nf2').value.trim(),hora2:$('#m-hora2').value,vol2:parseFloat($('#m-vol2').value)||null,comp:parseFloat($('#m-comp').value)||null,ini:$('#m-ini').value,fim:$('#m-fim').value,ocor:$('#m-ocor').value.trim()};
  $('#ov').classList.remove('on');render();dash();expSum();toast(st==='Executada'?`✓ ${p.id} executada`:`${p.id} salva`);upsertEstaca(curId);};
 
 // DASHBOARDS
@@ -322,7 +338,12 @@ function dash(){
  // concreto/dia
  const cbd=concByDay();const cd=days.slice(-14);const mc=Math.max(0.1,...cd.map(d=>cbd[d]||0));
  $('#byconc').innerHTML=cd.map(d=>`<div class="colw"><div class="st"><i style="height:${(cbd[d]||0)/mc*100}%;width:14px;background:var(--accent)" title="${(cbd[d]||0).toFixed(1)}"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`).join('');
+ // desperdício por dia (usado × teórico)
+ const wb=wasteByDay();const wd=Object.keys(wb).sort().slice(-14);
+ $('#bywaste').innerHTML=wd.length?wd.map(d=>{const o=wb[d];const perda=o.teor?(o.used-o.teor)/o.teor:0;const pct=Math.round(perda*100);const red=perda>0.30;
+   return `<div class="bar"><div class="nm">${d.slice(8)}/${d.slice(5,7)}</div><div class="tr"><i style="width:${Math.min(100,Math.max(2,pct))}%;background:${red?'var(--crit)':'var(--ok)'}"></i></div><div class="vv" style="min-width:64px;text-align:right;color:${red?'var(--crit)':'var(--muted)'};font-weight:800">${red?'🔴 ':''}${pct>=0?'+':''}${pct}%</div></div>`;}).join(''):`<div style="color:var(--muted);font-size:13px;padding:4px 2px">Sem estacas com volume lançado ainda.</div>`;
 }
+function wasteByDay(){const m={};for(const k in state){const s=state[k];if(s.st!=='Executada'||!s.data)continue;const used=volUtil(s);if(!used)continue;const p=PILES.find(x=>x.k===k);if(!p)continue;const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c);if(!m[s.data])m[s.data]={teor:0,used:0};m[s.data].teor+=teor;m[s.data].used+=used;}return m;}
 function drawCurve(pts,total){if(!pts.length){$('#curve').innerHTML='';return;}
  const W=340,H=130,pad=8,n=pts.length-1||1;const maxY=total;
  const X=i=>pad+i*(W-2*pad)/n,Y=v=>H-pad-(v/maxY)*(H-2*pad);
@@ -344,12 +365,33 @@ function btPanel(){const u=btUsage();const nfs=Object.keys(u).sort((a,b)=>a.loca
 // EXPORT
 function expSum(){const real=PILES.filter(p=>isExec(p.k)).length;$('#exp-sum').textContent=`${PILES.length} estacas · ${real} executadas · gerado por ${user?user.name:''}`;}
 $('#btn-export').onclick=()=>{
- const H=['Nº','Frente','Estaca','Ø (mm)','Comp projeto (m)','Status','Data exec','BT 1','Vol BT1 (m³)','BT 2','Vol BT2 (m³)','Comp exec (m)','Vol utilizado (m³)','Vol teórico (m³)','Consumo (%)','Situação','Início','Término'];
+ const H=['Nº','Frente','Estaca','Bloco','Pilar','Ø (mm)','Comp projeto (m)','Status','Data exec','BT1','NF1','Chegada BT1','Vol BT1 (m³)','BT2','NF2','Chegada BT2','Vol BT2 (m³)','Comp exec (m)','Vol utilizado (m³)','Vol teórico (m³)','Consumo (%)','Situação','Início concr.','Término','Ocorrências'];
  const rows=PILES.map((p,i)=>{const s=state[p.k]||{};const comp=s.comp||p.c;const t=Math.PI*Math.pow(p.d/2000,2)*comp;const v=volUtil(s);const c=v?v/t:'';const sit=c===''?'':c<1?'VERIFICAR':c>1.5?'SOBRECONSUMO':'CONFORME';
-  return [i+1,p.fr,p.id,p.d,p.c,s.st||'Programada',s.data||'',s.bt1||'',s.vol1||'',s.bt2||'',s.vol2||'',s.comp||'',v||'',t.toFixed(2),c===''?'':Math.round(c*100)+'%',sit,s.ini||'',s.fim||''];});
+  return [i+1,p.fr,p.id,s.bloco||'',s.pilar||'',p.d,p.c,s.st||'Programada',s.data||'',s.bt1||'',s.nf1||'',s.hora1||'',s.vol1||'',s.bt2||'',s.nf2||'',s.hora2||'',s.vol2||'',s.comp||'',v||'',t.toFixed(2),c===''?'':Math.round(c*100)+'%',sit,s.ini||'',s.fim||'',s.ocor||''];});
  const csv='﻿'+[H,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\r\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='Controle_Estacas_Legacy_'+new Date().toISOString().slice(0,10)+'.csv';a.click();toast('📄 Planilha baixada');};
+// RESUMO DIÁRIO (WhatsApp)
+function fmtBR(d){if(!d)return'';const a=d.split('-');return a[2]+'/'+a[1]+'/'+a[0];}
+function nBR(x){return x.toFixed(2).replace('.',',');}
+function waResumo(){
+ const day=$('#wa-date').value||new Date().toISOString().slice(0,10);
+ const list=PILES.filter(p=>{const s=state[p.k];return s&&s.st==='Executada'&&s.data===day;});
+ let conc=0;
+ const lines=list.map(p=>{const s=state[p.k];const v=volUtil(s);conc+=v;
+  const bp=[s.bloco&&('Bloco '+s.bloco),s.pilar&&('Pilar '+s.pilar)].filter(Boolean).join(' / ');
+  const bt=[s.bt1,s.bt2].filter(Boolean).join('+');
+  const hora=(s.ini||s.fim)?` ⏱ ${s.ini||'—'}→${s.fim||'—'}`:'';
+  return `• ${p.id} (${p.fr})${bp?' — '+bp:''}${hora}${bt?' — BT '+bt:''}${v?' — '+nBR(v)+' m³':''}`;});
+ const head=`🏗️ ESTACAS HÉLICE — Legacy / Nestlé Araras\n📅 ${fmtBR(day)}\n✅ Executadas: ${list.length}`;
+ const body=list.length?'\n\n'+lines.join('\n'):'\n\n(nenhuma estaca executada nesta data)';
+ const foot=list.length?`\n\n🧱 Concreto do dia: ${nBR(conc)} m³\n👷 Apontador: ${user?user.name:''}`:'';
+ return head+body+foot;}
+function initWA(){const el=$('#wa-date');if(el&&!el.value)el.value=new Date().toISOString().slice(0,10);}
+document.addEventListener('click',async e=>{if(e.target.closest&&e.target.closest('#btn-wa')){const txt=waResumo();
+ try{await navigator.clipboard.writeText(txt);toast('📋 Resumo copiado! Cole no WhatsApp');}
+ catch(_){const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('📋 Resumo copiado!');}catch(__){prompt('Copie o resumo:',txt);}document.body.removeChild(ta);}}});
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1900);}
+initWA();
 </script>
 </body>
 </html>
