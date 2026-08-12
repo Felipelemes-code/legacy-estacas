@@ -449,7 +449,7 @@ $('#ef-save').onclick=async()=>{const eq=efAll().filter(x=>efPresent.has(pkey(x)
 // RESUMO DIÁRIO (WhatsApp)
 function fmtBR(d){if(!d)return'';const a=d.split('-');return a[2]+'/'+a[1]+'/'+a[0];}
 function nBR(x){return x.toFixed(2).replace('.',',');}
-async function efInfo(day){if(!sbOn())return null;try{const r=await fetch(`${SB_URL}/rest/v1/efetivo?data=eq.${day}&select=*`,{headers:sbHead});const rows=await r.json();if(rows&&rows[0]){let eq=[];try{eq=JSON.parse(rows[0].equipe_json||'[]');}catch(_){}return{lider:rows[0].lider||'',n:eq.length};}}catch(_){}return null;}
+async function efInfo(day){if(!sbOn())return null;try{const r=await fetch(`${SB_URL}/rest/v1/efetivo?data=eq.${day}&select=*`,{headers:sbHead});const rows=await r.json();if(rows&&rows[0]){let eq=[];try{eq=JSON.parse(rows[0].equipe_json||'[]');}catch(_){}return{lider:rows[0].lider||'',n:eq.length,eq:eq};}}catch(_){}return null;}
 async function waResumo(){
  const day=$('#wa-date').value||new Date().toISOString().slice(0,10);
  const list=PILES.filter(p=>{const s=state[p.k];return s&&s.st==='Executada'&&s.data===day;});
@@ -460,10 +460,12 @@ async function waResumo(){
   const hora=(s.ini||s.fim)?` ⏱ ${s.ini||'—'}→${s.fim||'—'}`:'';
   return `• ${p.id} (${p.fr})${bp?' — '+bp:''}${hora}${bt?' — BT '+bt:''}${v?' — '+nBR(v)+' m³':''}`;});
  const ef=await efInfo(day);
- const efLine=ef?`\n👷 Encarregado: ${ef.lider||'—'} · Efetivo: ${ef.n}`:'';
+ let efBlk='';
+ if(ef){efBlk=`\n👷 Encarregado: ${ef.lider||'—'}`;
+  if(ef.eq&&ef.eq.length){efBlk+=`\n👥 Equipe do dia (${ef.eq.length}):\n`+ef.eq.map(x=>`• ${x.n}${x.t?' ('+(x.e||'terceiro')+')':''}`).join('\n');}}
  const head=`🏗️ ESTACAS HÉLICE — Legacy / Nestlé Araras\n📅 ${fmtBR(day)}\n✅ Executadas: ${list.length}`;
  const body=list.length?'\n\n'+lines.join('\n'):'\n\n(nenhuma estaca executada nesta data)';
- const foot=`\n\n${list.length?'🧱 Concreto do dia: '+nBR(conc)+' m³':''}${efLine}\n📝 Apontador: ${user?user.name:''}`;
+ const foot=`\n\n${list.length?'🧱 Concreto do dia: '+nBR(conc)+' m³':''}${efBlk}\n📝 Apontador: ${user?user.name:''}`;
  return head+body+foot;}
 function initWA(){const el=$('#wa-date');if(el&&!el.value)el.value=new Date().toISOString().slice(0,10);}
 document.addEventListener('click',async e=>{if(e.target.closest&&e.target.closest('#btn-wa')){const txt=await waResumo();
