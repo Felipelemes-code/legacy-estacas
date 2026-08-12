@@ -103,6 +103,22 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
 .btveio .inp{width:66px;padding:7px 8px;font-size:14px;text-align:right}
 .btsobra{font-size:11.5px;font-weight:800;white-space:nowrap;min-width:74px;text-align:right;color:var(--muted)}
 .btsobra.pos{color:var(--ok)}.btsobra.neg{color:var(--crit)}
+.efsum{display:flex;gap:8px;margin-bottom:4px}
+.efsum .kc{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:9px 4px;text-align:center}
+.efsum .kc .v{font-size:20px;font-weight:800}.efsum .kc .l{font-size:9.5px;color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.03em}
+.eflist{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+.efrow{display:flex;align-items:center;gap:10px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:9px 11px}
+.efrow.on{border-color:var(--brand);background:var(--info-bg)}
+.efrow .chk{width:22px;height:22px;border-radius:6px;border:2px solid var(--muted-2);flex:none;display:grid;place-items:center;color:#fff}
+.efrow.on .chk{background:var(--brand);border-color:var(--brand)}
+.efrow .chk svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:3.5;display:none}
+.efrow.on .chk svg{display:block}
+.efrow .who{flex:1;min-width:0}.efrow .who b{font-size:13.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+.efrow .who small{font-size:11px;color:var(--muted)}
+.efrow .cat{font-size:9.5px;font-weight:800;padding:3px 7px;border-radius:20px;flex:none}
+.cat.MOD{background:var(--ok-bg);color:var(--ok)}.cat.MDI{background:var(--info-bg);color:var(--brand-2)}.cat.Terceiro{background:var(--warn-bg);color:var(--warn)}
+.efrow .lider{flex:none;font-size:17px;line-height:1;opacity:.25;background:none;border:none;padding:0 2px}.efrow .lider.on{opacity:1}
+.efadd{margin-top:14px;padding:12px;border:1px dashed var(--border);border-radius:12px;font-size:12.5px;color:var(--muted);font-weight:700}
 .calc{background:var(--info-bg);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;margin:4px 0 12px}
 .calc .b{text-align:center}.calc .b .v{font-size:18px;font-weight:800}.calc .b .l{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700}
 .sit{font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px}
@@ -167,6 +183,22 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
       <div class="card"><h3>Desperdício de concreto por dia <small>· usado × teórico</small></h3><div id="bywaste"></div>
         <p style="color:var(--muted);font-size:12px;margin:9px 2px 0">🔴 acende quando a perda do dia passa de <b>30%</b> (volume usado bem acima do teórico).</p></div>
     </section>
+    <!-- EFETIVO -->
+    <section class="view" id="v-efet">
+      <div class="card" style="margin-bottom:12px">
+        <div class="row2"><div class="fld" style="margin:0"><label>Dia</label><input class="inp" id="ef-date" type="date"></div>
+          <div class="fld" style="margin:0"><label>Líder / Encarregado</label><input class="inp" id="ef-lider" list="ef-names" placeholder="nome do encarregado"></div></div>
+      </div>
+      <div class="efsum" id="ef-sum"></div>
+      <div class="togg" id="ef-filter"><button data-c="" class="on">Todos</button><button data-c="MOD">MOD</button><button data-c="MDI">MDI</button><button data-c="Terceiro">Terceiros</button></div>
+      <div class="searchw"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="ef-q" placeholder="Buscar pessoa..."></div>
+      <div class="eflist" id="ef-list"></div>
+      <div class="efadd">Não está na lista?
+        <div class="row2" style="margin-top:6px"><input class="inp" id="ef-newn" placeholder="Nome"><input class="inp" id="ef-newf" placeholder="Função"></div>
+        <button class="btn gh" id="ef-addbtn" style="width:100%;margin-top:6px;flex:1">+ Adicionar à categoria selecionada</button></div>
+      <button class="btn pri" id="ef-save" style="margin:14px 0 6px"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Salvar efetivo do dia</button>
+      <datalist id="ef-names"></datalist>
+    </section>
     <!-- EXPORT -->
     <section class="view" id="v-exp">
       <div class="exp">
@@ -189,6 +221,7 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
   <div class="nav" id="nav">
     <button data-v="est" class="on"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Estacas</button>
     <button data-v="dash"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 13l3-3 3 3 5-6"/></svg>Painel</button>
+    <button data-v="efet"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Efetivo</button>
     <button data-v="exp"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 10l5 5 5-5M5 21h14"/></svg>Exportar</button>
   </div>
 </div>
@@ -271,7 +304,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();
 setInterval(()=>{if(!document.hidden&&!$('#ov').classList.contains('on'))refresh();},8000);
 
 // NAV
-$('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$$('#nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');const v=b.dataset.v;$$('.view').forEach(x=>x.classList.remove('on'));$('#v-'+v).classList.add('on');if(v==='dash')dash();});
+$('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$$('#nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');const v=b.dataset.v;$$('.view').forEach(x=>x.classList.remove('on'));$('#v-'+v).classList.add('on');if(v==='dash')dash();if(v==='efet')efetRender();});
 $('#theme').onclick=()=>{const c=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',c==='dark'?'light':'dark');dash();};
 
 // ESTACAS
@@ -370,10 +403,52 @@ $('#btn-export').onclick=()=>{
   return [i+1,p.fr,p.id,s.bloco||'',s.pilar||'',p.d,p.c,s.st||'Programada',s.data||'',s.bt1||'',s.nf1||'',s.hora1||'',s.vol1||'',s.bt2||'',s.nf2||'',s.hora2||'',s.vol2||'',s.comp||'',v||'',t.toFixed(2),c===''?'':Math.round(c*100)+'%',sit,s.ini||'',s.fim||'',s.ocor||''];});
  const csv='﻿'+[H,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\r\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='Controle_Estacas_Legacy_'+new Date().toISOString().slice(0,10)+'.csv';a.click();toast('📄 Planilha baixada');};
+// ===== EFETIVO DIÁRIO =====
+const ROSTER=[{"n": "Candido Augusto Sampaio Pereira Neto", "f": "Supervisor De Produção", "c": "MDI", "e": "ENGEKO"}, {"n": "Carlos Henrique De Souza", "f": "Gerente De Contrato", "c": "MDI", "e": "ENGEKO"}, {"n": "Felipe Moreira Sanches", "f": "Supervisor De Engenharia", "c": "MDI", "e": "ENGEKO"}, {"n": "Karen Alves Barrel", "f": "Coordenadora De Planejamento", "c": "MDI", "e": "ENGEKO"}, {"n": "Otavio Dos Santos Filho", "f": "Supervisor Seguranca Do Trabalho", "c": "MDI", "e": "ENGEKO"}, {"n": "Sarah De Jesus Costa", "f": "Supervisora De Rh", "c": "MDI", "e": "ENGEKO"}, {"n": "Sonia Maria Loyola Ferreira Peres", "f": "Cordenadora De Custo", "c": "MDI", "e": "ENGEKO"}, {"n": "Flavio Ribeiro Da Silva", "f": "Superintendente De Contrato", "c": "MDI", "e": "ENGEKO"}, {"n": "Tayla Ferreira Zanoti", "f": "Supervisora De Custos", "c": "MDI", "e": "ENGEKO"}, {"n": "Camila Pereira De Sousa", "f": "Coordenadora De Medição", "c": "MDI", "e": "ENGEKO"}, {"n": "Ronielio Ferreira Leite", "f": "Projetista", "c": "MDI", "e": "ENGEKO"}, {"n": "Nelson Dos Santos Sales", "f": "Supervisor De Obra", "c": "MDI", "e": "ENGEKO"}, {"n": "Agenor Kurtz De Assumpcao", "f": "Coordenador De Qsms", "c": "MDI", "e": "ENGEKO"}, {"n": "Cicero Xavier Dos Santos", "f": "Coordenador Administrativo", "c": "MDI", "e": "ENGEKO"}, {"n": "Felipe Lemes Magalhaes", "f": "Supervisor De Planejamento", "c": "MDI", "e": "ENGEKO"}, {"n": "Adriano Ferreira Pinto", "f": "Tecnico De Seguranca Do Trabalho", "c": "MDI", "e": "ENGEKO"}, {"n": "Jose Rangel Da Silva", "f": "Encarregado De Obra Iv", "c": "MDI", "e": "ENGEKO"}, {"n": "Wataandson Boniek Dos Anjos Alencar", "f": "Comprador", "c": "MDI", "e": "ENGEKO"}, {"n": "Reinaldo Limeira Da Silva Alcantara", "f": "Topógrafo", "c": "MDI", "e": "ENGEKO"}, {"n": "Kauã Vinicius Weibel Candido", "f": "Auxiliar De Topografia", "c": "MOD", "e": "ENGEKO"}, {"n": "Valdir Almeida De Souza", "f": "Armador", "c": "MOD", "e": "ENGEKO"}, {"n": "Jose Sebastiao De Oliveira Silva", "f": "Carpinteiro", "c": "MOD", "e": "ENGEKO"}, {"n": "José Célio Da Silva", "f": "Carpinteiro", "c": "MOD", "e": "ENGEKO"}, {"n": "Jose Carlos Barbosa Dos Santos", "f": "Pedreiro", "c": "MOD", "e": "ENGEKO"}, {"n": "Francisco Bispo Da Silva Bulhões", "f": "Carpinteiro", "c": "MOD", "e": "ENGEKO"}, {"n": "Jose Luiz De Andrade", "f": "Pedreiro", "c": "MOD", "e": "ENGEKO"}, {"n": "Luis Fernando Souza Do Carmo", "f": "Apontador", "c": "MDI", "e": "ENGEKO"}, {"n": "Narciso Barbosa Dos Santos", "f": "Ajudante De Obras", "c": "MOD", "e": "ENGEKO"}, {"n": "Anderson Laudenzack Manzoli", "f": "Pedreiro", "c": "MOD", "e": "ENGEKO"}, {"n": "Diego Oliveira De Amorim", "f": "Ajudante De Obras", "c": "MOD", "e": "ENGEKO"}, {"n": "Leandro Sorrentino Santos", "f": "Ajudante De Obras", "c": "MOD", "e": "ENGEKO"}, {"n": "Kaua Gonçalves De Sá", "f": "Assistente De Rh", "c": "MDI", "e": "ENGEKO"}, {"n": "Jonatas Rogério Pires Da Silva", "f": "Ajudante De Obras", "c": "MOD", "e": "ENGEKO"}, {"n": "Ricardo De Souza Manzoli", "f": "Ajudante De Obras", "c": "MOD", "e": "ENGEKO"}, {"n": "Everton Tiago Vides", "f": "Ajudante De Obras", "c": "MOD", "e": "ENGEKO"}, {"n": "Leandro Pedroso Da Silva", "f": "Ajudante De Obras", "c": "MOD", "e": "ENGEKO"}, {"n": "Jackson Muniz Tavares", "f": "Tecnico De Segunraça Do Trabalho", "c": "MDI", "e": "ENGEKO"}, {"n": "Danilo Miguel Menezes Da Silva", "f": "Operador De Maquina I", "c": "MOD", "e": "ENGEKO"}, {"n": "Jackson Davis Oliveira Guedes", "f": "Tecnico De Controle De Qualidade Civil", "c": "MDI", "e": "ENGEKO"}, {"n": "Marcelo Amaral Dos Santos", "f": "Encarregado De Obras Ii", "c": "MDI", "e": "ENGEKO"}, {"n": "Daemisson De Sousa Lima", "f": "Armador", "c": "MOD", "e": "ENGEKO"}, {"n": "Jailson Januário", "f": "Pedreiro", "c": "MOD", "e": "ENGEKO"}, {"n": "Jean Gasses Vieira Lima", "f": "Armador", "c": "MOD", "e": "ENGEKO"}, {"n": "Mauro Antonio Da Silva", "f": "Pedreiro", "c": "MOD", "e": "ENGEKO"}, {"n": "Jose Valderez Da Silva", "f": "Armador", "c": "MOD", "e": "ENGEKO"}, {"n": "Guilherme De Brito", "f": "Analista Administrativo", "c": "MDI", "e": "ENGEKO"}, {"n": "Isabel Crsitina Silva Leite Souza", "f": "Auxiliar De Serviços Gerais", "c": "MDI", "e": "ENGEKO"}, {"n": "Pablo Diego Vides", "f": "Ajudante De Obras", "c": "MOD", "e": "ENGEKO"}, {"n": "Michele Janaina Arruda", "f": "Auxiliar De Serviços Gerais", "c": "MDI", "e": "ENGEKO"}, {"n": "João Paulo Da Silva", "f": "Encarregado De Obras Ii", "c": "MDI", "e": "ENGEKO"}, {"n": "Eduardo Jose Inocencio Lopes", "f": "Motorista De Veículos Pesados", "c": "MOD", "e": "ENGEKO"}, {"n": "Jose Clemir Da Silva", "f": "Eletrcista De Força E Controle", "c": "MOD", "e": "ENGEKO"}, {"n": "Marcio Da Silva Rodrigues", "f": "Marteleteiro", "c": "MOD", "e": "ENGEKO"}, {"n": "Eugenio Gama De Oliveira", "f": "Operador De Maquinas", "c": "MOD", "e": "ENGEKO"}, {"n": "Wallas Moreira Lima", "f": "Motorista De Veículos Pesados", "c": "MOD", "e": "ENGEKO"}, {"n": "Guilherme Augusto Da Silva", "f": "Tecnico De Segurança Do Trabalho", "c": "MDI", "e": "ENGEKO"}, {"n": "Márcio Carlos Pires De Oliveira", "f": "Almoxarife", "c": "MDI", "e": "ENGEKO"}, {"n": "Edmar Ferreira", "f": "Motorista Operador De Bomba", "c": "Terceiro", "e": "Flex Bombeamento"}, {"n": "Francisco Vancelir Nunes Da Silva", "f": "Motorista Operador De Bomba", "c": "Terceiro", "e": "Flex Bombeamento"}, {"n": "Flavio Candido Da Costa", "f": "Motorista Operador De Bomba", "c": "Terceiro", "e": "Flex Bombeamento"}, {"n": "Joao Batista Marques Cunha Junior", "f": "Motorista Operador De Bomba", "c": "Terceiro", "e": "Flex Bombeamento"}, {"n": "Felipe Rocha Batista", "f": "Ajudante De Obras Júnior", "c": "Terceiro", "e": "Helicebras"}, {"n": "Diego Sousa Do Nascimento", "f": "Encarregado Master", "c": "Terceiro", "e": "Helicebras"}, {"n": "Lucas De Sousa Nascimento", "f": "Ajudante De Obras Júnior", "c": "Terceiro", "e": "Helicebras"}, {"n": "Felipe Henrique Da Silva Teixeira", "f": "Mecânico De Máquinas Ii", "c": "Terceiro", "e": "Helicebras"}, {"n": "Mailson Ferreira Da Silva", "f": "Ajudante De Obras Júnior", "c": "Terceiro", "e": "Helicebras"}, {"n": "Jose Anderson Dos Santos Ferreira", "f": "Frentista De Obra C", "c": "Terceiro", "e": "Helicebras"}, {"n": "Marcio Geronimo Da Silva", "f": "Operador De Máquina Perfuratriz Master", "c": "Terceiro", "e": "Helicebras"}, {"n": "Joao Bueno Olieira Pereira", "f": "Técnico Eletricista De Instalação", "c": "Terceiro", "e": "Helicebras"}, {"n": "David Dos Santos Silva", "f": "Operador De Máquina Perfuratriz Master", "c": "Terceiro", "e": "Helicebras"}, {"n": "Elilson Lourenco Cavalcante", "f": "Ajudante De Obras", "c": "Terceiro", "e": "Helicebras"}, {"n": "Johny Willian Dos Santos Sousa", "f": "Gerente De Produção E Operações", "c": "Terceiro", "e": "Helicebras"}, {"n": "Moabes Rodrigues Vieira", "f": "Operador De Bomba", "c": "Terceiro", "e": "Basemix"}, {"n": "Wesley Lima Vieira", "f": "Ajudante De Motorista", "c": "Terceiro", "e": "Basemix"}, {"n": "Genivaldo Araujo Natal", "f": "Ajudante De Motorista", "c": "Terceiro", "e": "Basemix"}, {"n": "Douglas Campos Carioca", "f": "Laboratorista", "c": "Terceiro", "e": "Alphagel"}, {"n": "Luciano Antonio Nunes De Almeida", "f": "Operadro De Munck", "c": "Terceiro", "e": "Cunzolo"}, {"n": "Alex Fabiano Poncio", "f": "Laboratorista", "c": "Terceiro", "e": "Alphagel"}, {"n": "Edvaldo Da Silva De Oliveira", "f": "Auxiliar De Laboratório", "c": "Terceiro", "e": "Alphagel"}];  // [{n:nome, f:função, c:MOD|MDI|Terceiro, e:empresa}]
+let efDay=null, efLider='', efPresent=new Set(), efExtra=[], efFilter='';
+const pkey=x=>x.n+'|'+(x.e||'');
+function efAll(){return ROSTER.concat(efExtra);}
+async function efLoad(day){
+ efDay=day; efPresent=new Set(); efLider=''; efExtra=[];
+ if(!sbOn())return;
+ try{const r=await fetch(`${SB_URL}/rest/v1/efetivo?data=eq.${day}&select=*`,{headers:sbHead});const rows=await r.json();
+  if(rows&&rows[0]){efLider=rows[0].lider||'';let eq=[];try{eq=JSON.parse(rows[0].equipe_json||'[]');}catch(_){}
+   eq.forEach(x=>{efPresent.add(pkey(x));if(!ROSTER.some(y=>pkey(y)===pkey(x)))efExtra.push(x);});}
+ }catch(e){}
+}
+function efSummary(){const cnt={MOD:0,MDI:0,Terceiro:0};efAll().forEach(x=>{if(efPresent.has(pkey(x)))cnt[x.c]=(cnt[x.c]||0)+1;});
+ const tot=cnt.MOD+cnt.MDI+cnt.Terceiro;
+ $('#ef-sum').innerHTML=[['Total',tot],['MOD',cnt.MOD],['MDI',cnt.MDI],['Terceiros',cnt.Terceiro]].map(([l,v])=>`<div class="kc"><div class="v num">${v}</div><div class="l">${l}</div></div>`).join('');}
+function efListRender(){
+ const q=($('#ef-q').value||'').toLowerCase();
+ const list=efAll().filter(x=>(!efFilter||x.c===efFilter)&&(!q||(x.n+' '+(x.f||'')+' '+(x.e||'')).toLowerCase().includes(q)));
+ list.sort((a,b)=>(efPresent.has(pkey(b))?1:0)-(efPresent.has(pkey(a))?1:0));
+ $('#ef-list').innerHTML=list.map(x=>{const on=efPresent.has(pkey(x));const isL=efLider===x.n;
+  return `<div class="efrow ${on?'on':''}" data-k="${encodeURIComponent(pkey(x))}"><div class="chk"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>`+
+   `<div class="who"><b>${x.n}</b><small>${x.f||''}${x.e&&x.e!=='ENGEKO'?' · '+x.e:''}</small></div>`+
+   `<span class="cat ${x.c}">${x.c==='Terceiro'?'TERC.':x.c}</span>`+
+   `<button class="lider ${isL?'on':''}" data-lider="${encodeURIComponent(x.n)}" title="Definir líder">⭐</button></div>`;}).join('')||`<div style="text-align:center;color:var(--muted);padding:20px">Ninguém encontrado.</div>`;
+ $('#ef-names').innerHTML=efAll().map(x=>`<option value="${x.n}">`).join('');
+ const ro=!canEdit();$('#ef-save').style.display=ro?'none':'flex';const ad=$('.efadd');if(ad)ad.style.display=ro?'none':'block';}
+function efetRender(){
+ if(!efDay){const d=new Date().toISOString().slice(0,10);$('#ef-date').value=d;efLoad(d).then(()=>{$('#ef-lider').value=efLider;efSummary();efListRender();});}
+ else{$('#ef-lider').value=efLider;efSummary();efListRender();}}
+$('#ef-date').addEventListener('change',e=>{efLoad(e.target.value).then(()=>{$('#ef-lider').value=efLider;efSummary();efListRender();});});
+$('#ef-q').addEventListener('input',efListRender);
+$('#ef-lider').addEventListener('input',e=>{efLider=e.target.value.trim();});
+$('#ef-filter').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$$('#ef-filter button').forEach(x=>x.classList.remove('on'));b.classList.add('on');efFilter=b.dataset.c;efListRender();});
+$('#ef-list').addEventListener('click',e=>{if(!canEdit())return;const lb=e.target.closest('.lider');if(lb){const n=decodeURIComponent(lb.dataset.lider);efLider=(efLider===n?'':n);$('#ef-lider').value=efLider;efListRender();return;}
+ const row=e.target.closest('.efrow');if(!row)return;const k=decodeURIComponent(row.dataset.k);if(efPresent.has(k))efPresent.delete(k);else efPresent.add(k);efSummary();efListRender();});
+$('#ef-addbtn').onclick=()=>{const n=$('#ef-newn').value.trim();if(!n)return;const f=$('#ef-newf').value.trim();const c=efFilter||'Terceiro';const x={n,f,c,e:c==='Terceiro'?'Terceiro':'ENGEKO'};if(!efAll().some(y=>pkey(y)===pkey(x)))efExtra.push(x);efPresent.add(pkey(x));$('#ef-newn').value='';$('#ef-newf').value='';efSummary();efListRender();};
+$('#ef-save').onclick=async()=>{const eq=efAll().filter(x=>efPresent.has(pkey(x)));setSync('...');
+ try{await sbUpsert('efetivo',{data:efDay,lider:efLider||null,equipe_json:JSON.stringify(eq),updated_by:user?user.name:null});setSync('ok');toast('✓ Efetivo salvo ('+eq.length+' pessoas)');}
+ catch(e){setSync('err');toast('⚠ Falha ao salvar efetivo');}};
+
 // RESUMO DIÁRIO (WhatsApp)
 function fmtBR(d){if(!d)return'';const a=d.split('-');return a[2]+'/'+a[1]+'/'+a[0];}
 function nBR(x){return x.toFixed(2).replace('.',',');}
-function waResumo(){
+async function efInfo(day){if(!sbOn())return null;try{const r=await fetch(`${SB_URL}/rest/v1/efetivo?data=eq.${day}&select=*`,{headers:sbHead});const rows=await r.json();if(rows&&rows[0]){let eq=[];try{eq=JSON.parse(rows[0].equipe_json||'[]');}catch(_){}return{lider:rows[0].lider||'',n:eq.length};}}catch(_){}return null;}
+async function waResumo(){
  const day=$('#wa-date').value||new Date().toISOString().slice(0,10);
  const list=PILES.filter(p=>{const s=state[p.k];return s&&s.st==='Executada'&&s.data===day;});
  let conc=0;
@@ -382,12 +457,14 @@ function waResumo(){
   const bt=[s.bt1,s.bt2].filter(Boolean).join('+');
   const hora=(s.ini||s.fim)?` ⏱ ${s.ini||'—'}→${s.fim||'—'}`:'';
   return `• ${p.id} (${p.fr})${bp?' — '+bp:''}${hora}${bt?' — BT '+bt:''}${v?' — '+nBR(v)+' m³':''}`;});
+ const ef=await efInfo(day);
+ const efLine=ef?`\n👷 Encarregado: ${ef.lider||'—'} · Efetivo: ${ef.n}`:'';
  const head=`🏗️ ESTACAS HÉLICE — Legacy / Nestlé Araras\n📅 ${fmtBR(day)}\n✅ Executadas: ${list.length}`;
  const body=list.length?'\n\n'+lines.join('\n'):'\n\n(nenhuma estaca executada nesta data)';
- const foot=list.length?`\n\n🧱 Concreto do dia: ${nBR(conc)} m³\n👷 Apontador: ${user?user.name:''}`:'';
+ const foot=`\n\n${list.length?'🧱 Concreto do dia: '+nBR(conc)+' m³':''}${efLine}\n📝 Apontador: ${user?user.name:''}`;
  return head+body+foot;}
 function initWA(){const el=$('#wa-date');if(el&&!el.value)el.value=new Date().toISOString().slice(0,10);}
-document.addEventListener('click',async e=>{if(e.target.closest&&e.target.closest('#btn-wa')){const txt=waResumo();
+document.addEventListener('click',async e=>{if(e.target.closest&&e.target.closest('#btn-wa')){const txt=await waResumo();
  try{await navigator.clipboard.writeText(txt);toast('📋 Resumo copiado! Cole no WhatsApp');}
  catch(_){const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('📋 Resumo copiado!');}catch(__){prompt('Copie o resumo:',txt);}document.body.removeChild(ta);}}});
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1900);}
