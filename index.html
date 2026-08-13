@@ -405,11 +405,11 @@ function dash(){
  const cnt={},re={};PILES.forEach(p=>{cnt[p.fr]=(cnt[p.fr]||0)+1;if(isExec(p.k))re[p.fr]=(re[p.fr]||0)+1;});
  $('#byfrente').innerHTML=FRENTES.map(f=>{const t=cnt[f],r=re[f]||0,pc=Math.round(r/t*100);return `<div class="bar"><div class="nm">${f}</div><div class="tr"><i style="width:${pc}%"></i></div><div class="vv">${r}/${t}</div></div>`;}).join('');
  btPanel();
- // por dia (prev x real)
- const dd=days.slice(-14);const mx=Math.max(1,...dd.map(d=>Math.max(pbd[d]||0,rbd[d]||0)));
+ // por dia (prev x real) — só dias até hoje
+ const past=days.filter(d=>d<=today);const dd=past.slice(-14);const mx=Math.max(1,...dd.map(d=>Math.max(pbd[d]||0,rbd[d]||0)));
  $('#byday').innerHTML=dd.map(d=>`<div class="colw"><div class="st"><i style="height:${(pbd[d]||0)/mx*100}%;background:#C9CCE0"></i><i style="height:${(rbd[d]||0)/mx*100}%;background:var(--brand)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`).join('');
  // concreto/dia
- const cbd=concByDay();const cd=days.slice(-14);const mc=Math.max(0.1,...cd.map(d=>cbd[d]||0));
+ const cbd=concByDay();const cd=past.slice(-14);const mc=Math.max(0.1,...cd.map(d=>cbd[d]||0));
  $('#byconc').innerHTML=cd.map(d=>`<div class="colw"><div class="st"><i style="height:${(cbd[d]||0)/mc*100}%;width:14px;background:var(--accent)" title="${(cbd[d]||0).toFixed(1)}"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`).join('');
  // desperdício por dia (usado × teórico)
  const wb=wasteByDay();const wd=Object.keys(wb).sort().slice(-14);
