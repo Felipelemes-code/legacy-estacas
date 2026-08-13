@@ -406,11 +406,12 @@ function dash(){
  const today=TODAY();
  const pbd=prevByDay();let pa=0,ra=0;const pts=days.map(d=>{pa+=(pbd[d]||0);ra+=(rbd[d]||0);return {d,pa,ra,hasR:!!rbd[d]};});
  drawCurve(pts,prev,today);
- // avanço previsto × realizado até hoje
- let prevToday=0;for(const dd in pbd){if(dd<=today)prevToday+=pbd[dd];}prevToday=Math.round(prevToday);
- const desvio=real-prevToday;const adiant=desvio>=0;
+ // avanço previsto × realizado — ancorado no último dia COM produção (não conta dias sem lançamento)
+ const rdk=Object.keys(rbd);const lastReal=rdk.length?rdk.slice().sort().pop():today;
+ let prevToday=0;for(const dd in pbd){if(dd<=lastReal)prevToday+=pbd[dd];}prevToday=Math.round(prevToday);
+ const desvio=real-prevToday;const adiant=desvio>=0;const lbl=lastReal.slice(8)+'/'+lastReal.slice(5,7);
  $('#dash-avanco').innerHTML=
-   `<div class="kc"><div class="v num">${prevToday}</div><div class="l">Previsto até hoje</div></div>`+
+   `<div class="kc"><div class="v num">${prevToday}</div><div class="l">Previsto até ${lbl}</div></div>`+
    `<div class="kc"><div class="v num">${real}</div><div class="l">Realizado</div></div>`+
    `<div class="kc"><div class="v num" style="color:${adiant?'var(--ok)':'var(--crit)'}">${adiant?'+':''}${desvio}</div><div class="l">${adiant?'Adiantado':'Atrasado'}</div></div>`;
  // por frente
