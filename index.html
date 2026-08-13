@@ -85,8 +85,9 @@
 .bar .vv{width:56px;text-align:right;font-weight:700;color:var(--muted)}
 .cols{display:flex;align-items:flex-end;gap:5px;height:110px;padding-top:8px}
 .colw{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;min-width:0}
-.colw .st{width:100%;display:flex;gap:2px;align-items:flex-end;height:100%;justify-content:center}
+.colw .st{width:100%;display:flex;gap:2px;align-items:flex-end;flex:1;min-height:0;justify-content:center}
 .colw .st i{width:8px;border-radius:3px 3px 0 0}.colw .x{font-size:8.5px;color:var(--muted)}
+.colw .vlab{font-size:8.5px;font-weight:800;color:var(--text);line-height:1;white-space:nowrap;min-height:10px}
 .leg{display:flex;gap:14px;font-size:11px;color:var(--muted);margin-top:8px}.leg i{width:10px;height:10px;border-radius:3px;display:inline-block;vertical-align:-1px;margin-right:4px}
 .exp{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center;box-shadow:var(--sh)}
 .exp svg{width:40px;height:40px;stroke:var(--brand-2);fill:none;stroke-width:1.6;margin-bottom:8px}
@@ -260,15 +261,15 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
   <div class="fld"><label>Status</label><div class="togg" id="m-st"><button data-v="Programada" class="on">Programada</button><button data-v="Executada">Executada ✓</button></div></div>
   <div class="row2"><div class="fld"><label>Data</label><input class="inp" id="m-data" type="date"></div><div class="fld"><label>Comp. exec. (m)</label><input class="inp" id="m-comp" type="number" step="0.1"></div></div>
   <div class="row2"><div class="fld"><label>Bloco</label><input class="inp" id="m-bloco" placeholder="ex.: B12"></div><div class="fld"><label>Pilar</label><input class="inp" id="m-pilar" placeholder="ex.: P12"></div></div>
-  <div class="btbox"><div class="btlab">BT 1 <small>(caminhão principal)</small></div>
+  <div class="btbox"><div class="btlab">BT 1 <small>(caminhão · 5 ou 7 m³)</small></div>
     <div class="row2"><div class="fld"><label>Nº BT</label><input class="inp" id="m-bt1" placeholder="caminhão"></div><div class="fld"><label>Nº NF</label><input class="inp" id="m-nf1" placeholder="nota fiscal"></div></div>
-    <div class="row2"><div class="fld"><label>Chegada na obra</label><input class="inp" id="m-hora1" type="time"></div><div class="fld"><label>Volume da BT (m³)</label><input class="inp" id="m-vol1" type="number" step="0.01"></div></div></div>
-  <div class="btbox"><div class="btlab">BT 2 <small>(transição — opcional)</small></div>
+    <div class="row2"><div class="fld"><label>Chegada na obra</label><input class="inp" id="m-hora1" type="time"></div><div class="fld"><label>Volume da BT (m³)</label><input class="inp" id="m-vol1" type="number" step="0.5" min="0" max="7" placeholder="5 ou 7"></div></div></div>
+  <div class="btbox"><div class="btlab">BT 2 <small>(transição — 5 ou 7 m³)</small></div>
     <div class="row2"><div class="fld"><label>Nº BT</label><input class="inp" id="m-bt2" placeholder="se dividiu 2 BTs"></div><div class="fld"><label>Nº NF</label><input class="inp" id="m-nf2" placeholder="nota fiscal"></div></div>
-    <div class="row2"><div class="fld"><label>Chegada na obra</label><input class="inp" id="m-hora2" type="time"></div><div class="fld"><label>Volume da BT (m³)</label><input class="inp" id="m-vol2" type="number" step="0.01"></div></div></div>
+    <div class="row2"><div class="fld"><label>Chegada na obra</label><input class="inp" id="m-hora2" type="time"></div><div class="fld"><label>Volume da BT (m³)</label><input class="inp" id="m-vol2" type="number" step="0.5" min="0" max="7" placeholder="5 ou 7"></div></div></div>
   <div class="row2"><div class="fld"><label>Início concr.</label><input class="inp" id="m-ini" type="time"></div><div class="fld"><label>Término</label><input class="inp" id="m-fim" type="time"></div></div>
   <div class="fld"><label>Ocorrências / observações</label><textarea class="inp" id="m-ocor" rows="2" placeholder="Ex.: paralisação por chuva, troca de trado, interferência..."></textarea></div>
-  <div class="calc"><div class="b"><div class="v num" id="m-teor">—</div><div class="l">Vol. teórico</div></div><div class="b"><div class="v num" id="m-cons">—</div><div class="l">Consumo</div></div><div class="b"><span class="sit" id="m-sit">—</span></div></div>
+  <div class="calc"><div class="b"><div class="v num" id="m-teor">—</div><div class="l">Teórico (proj.)</div></div><div class="b"><div class="v num" id="m-cons">—</div><div class="l">Vol. utilizado</div></div><div class="b"><span class="sit" id="m-sit">—</span></div></div>
   <div class="mf"><button class="btn gh" id="m-cancel">✕</button><button class="btn pri" id="m-save"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Salvar</button></div>
 </div></div>
 <!-- justificativa de perda -->
@@ -372,11 +373,14 @@ function openSheet(k){curId=k;const p=PILES.find(x=>x.k===k);const s=state[k]||{
  const ro=!canEdit();$$('#ov input,#ov textarea,#m-st button').forEach(el=>el.disabled=ro);$('#m-save').style.display=ro?'none':'flex';
  mcalc();$('#ov').classList.add('on');}
 function mcalc(){const p=PILES.find(x=>x.k===curId);const comp=parseFloat($('#m-comp').value)||p.c;
- const v1=parseFloat($('#m-vol1').value)||0,v2=parseFloat($('#m-vol2').value)||0,vol=v1+v2;
- const t=Math.PI*Math.pow(p.d/2000,2)*comp;$('#m-teor').textContent=t.toFixed(2)+' m³';
- if(vol){const c=vol/t;$('#m-cons').textContent=Math.round(c*100)+'%';const sit=c<1?['VERIFICAR','var(--crit-bg)','var(--crit)']:c>1.5?['SOBRECONSUMO','var(--warn-bg)','var(--warn)']:['CONFORME','var(--ok-bg)','var(--ok)'];const el=$('#m-sit');el.textContent=sit[0];el.style.background=sit[1];el.style.color=sit[2];}
- else{$('#m-cons').textContent='—';$('#m-sit').textContent='—';$('#m-sit').style.background='var(--surface-2)';$('#m-sit').style.color='var(--muted)';}}
-$$('#m-comp,#m-vol1,#m-vol2').forEach(el=>el.addEventListener('input',mcalc));
+ const teorProj=Math.PI*Math.pow(p.d/2000,2)*p.c;      // teórico do projeto
+ const util=Math.PI*Math.pow(p.d/2000,2)*comp;          // volume utilizado = teórico do comprimento executado
+ $('#m-teor').textContent=teorProj.toFixed(2)+' m³';
+ $('#m-cons').textContent=util.toFixed(2)+' m³';
+ const dl=comp-p.c;const el=$('#m-sit');
+ if(Math.abs(dl)<0.05){el.textContent='= projeto';el.style.background='var(--ok-bg)';el.style.color='var(--ok)';}
+ else{el.textContent=(dl>0?'+':'')+dl.toFixed(1)+' m';el.style.background=dl>0?'var(--warn-bg)':'var(--crit-bg)';el.style.color=dl>0?'var(--warn)':'var(--crit)';}}
+$('#m-comp').addEventListener('input',mcalc);
 $('#m-st').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;$$('#m-st button').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
 $('#m-cancel').onclick=()=>$('#ov').classList.remove('on');$('#ov').onclick=e=>{if(e.target.id==='ov')$('#ov').classList.remove('on');};
 $('#m-save').onclick=()=>{const st=$('#m-st button.on').dataset.v;const p=PILES.find(x=>x.k===curId);
@@ -416,10 +420,10 @@ function dash(){
  btPanel();
  // por dia (prev x real) — só dias até hoje
  const past=days.filter(d=>d<=today);const dd=past.slice(-14);const mx=Math.max(1,...dd.map(d=>Math.max(pbd[d]||0,rbd[d]||0)));
- $('#byday').innerHTML=dd.map(d=>`<div class="colw"><div class="st"><i style="height:${(pbd[d]||0)/mx*100}%;background:#C9CCE0"></i><i style="height:${(rbd[d]||0)/mx*100}%;background:var(--brand)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`).join('');
+ $('#byday').innerHTML=dd.map(d=>`<div class="colw"><div class="vlab">${rbd[d]||''}</div><div class="st"><i style="height:${(pbd[d]||0)/mx*100}%;background:#C9CCE0"></i><i style="height:${(rbd[d]||0)/mx*100}%;background:var(--brand)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`).join('');
  // concreto/dia
  const cbd=concByDay();const cd=past.slice(-14);const mc=Math.max(0.1,...cd.map(d=>cbd[d]||0));
- $('#byconc').innerHTML=cd.map(d=>`<div class="colw"><div class="st"><i style="height:${(cbd[d]||0)/mc*100}%;width:14px;background:var(--accent)" title="${(cbd[d]||0).toFixed(1)}"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`).join('');
+ $('#byconc').innerHTML=cd.map(d=>`<div class="colw"><div class="vlab">${(cbd[d]||0)?(cbd[d]).toFixed(1):''}</div><div class="st"><i style="height:${(cbd[d]||0)/mc*100}%;width:14px;background:var(--accent)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`).join('');
  // desperdício por dia (usado × teórico)
  const wb=wasteByDay();const wd=Object.keys(wb).sort().slice(-14);
  $('#bywaste').innerHTML=wd.length?wd.map(d=>{const o=wb[d];const perda=o.used-o.teor;const pct=o.teor?Math.round(perda/o.teor*100):0;const red=o.teor&&perda/o.teor>0.30;const hasC=!!(perdaState[d]&&perdaState[d].trim());
@@ -435,8 +439,8 @@ function drawCurve(pts,total,today){if(!pts.length){$('#curve').innerHTML='';ret
  let g='';
  [0,.5,1].forEach(f=>{const v=Math.round(total*f),y=Y(total*f);g+=`<line x1="${L}" y1="${y}" x2="${Rr}" y2="${y}" stroke="${cBd}" stroke-width="1"/><text x="${L-4}" y="${y+3}" text-anchor="end" font-size="9" fill="${cT}">${v}</text>`;});
  const prevLine=pts.map((p,i)=>`${X(i)},${Y(p.pa)}`).join(' ');
- const lastR=pts.map((p,i)=>({i,p})).filter(o=>o.p.ra>0).pop();
- let real='';pts.forEach((p,i)=>{if(!lastR||i<=lastR.i)real+=`${X(i)},${Y(p.ra)} `;});
+ const lastR=pts.map((p,i)=>({i,p})).filter(o=>o.p.hasR).pop();  // último dia COM produção (não passa de hoje)
+ let real='';pts.forEach((p,i)=>{if(lastR&&i<=lastR.i)real+=`${X(i)},${Y(p.ra)} `;});
  let ti=pts.findIndex(p=>p.d===today);if(ti<0&&lastR)ti=lastR.i;
  let hoje='';if(ti>=0){const hx=X(ti);hoje=`<line x1="${hx}" y1="${T}" x2="${hx}" y2="${B}" stroke="${cB}" stroke-width="1" stroke-dasharray="2 3" opacity=".55"/><text x="${hx}" y="${T-3}" font-size="8.5" fill="${cB}" text-anchor="middle" font-weight="800">HOJE</text>`;}
  let xl='';[...new Set([0,ti>=0?ti:n,n])].forEach(i=>{if(i<0)return;const d=pts[i].d;xl+=`<text x="${X(i)}" y="${B+13}" font-size="8.5" fill="${cT}" text-anchor="middle">${d.slice(8)}/${d.slice(5,7)}</text>`;});
