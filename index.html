@@ -316,6 +316,8 @@ const UKEY='apont_user_v2';
 let state={};      // {k: {st,data,bt1,vol1,bt2,vol2,comp,ini,fim}}
 let btState={};    // {NF: {entregue}}
 let perdaState={}; // {data: comentario/justificativa da perda}
+// concreto ENTREGUE por dia (betoneiras reais × volume) — informado pela obra
+const CONC_ENTREGUE={'2026-08-05':21,'2026-08-06':36,'2026-08-07':14,'2026-08-10':14,'2026-08-11':45,'2026-08-12':64,'2026-08-13':52};
 let user=JSON.parse(localStorage.getItem(UKEY)||'null');
 let curFr='',curStatus='',curId=null,limit=40,lgRole='apontador';
 async function loadAll(){
@@ -439,14 +441,21 @@ function dash(){
  // por dia (prev x real) — só dias até hoje
  const past=days.filter(d=>d<=today);const dd=past.slice(-14);const mx=Math.max(1,...dd.map(d=>Math.max(pbd[d]||0,rbd[d]||0)));
  $('#byday').innerHTML=dd.map(d=>`<div class="colw"><div class="vlab">${rbd[d]||''}</div><div class="st"><i style="height:${(pbd[d]||0)/mx*100}%;background:#C9CCE0"></i><i style="height:${(rbd[d]||0)/mx*100}%;background:var(--brand)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`).join('');
- // concreto por dia — chegou (BT/NF) × utilizado (real) → desperdício
- const wb=wasteByDay();const cd=Object.keys(wb).sort().filter(d=>d<=today).slice(-14);
- const mc=Math.max(0.1,...cd.map(d=>wb[d].used||0));
- $('#byconc').innerHTML=cd.length?cd.map(d=>{const o=wb[d];const cheg=o.used,util=o.teor;const perda=cheg-util;const pct=util?Math.round(perda/util*100):0;const red=util&&perda/util>0.30;const hasC=!!(perdaState[d]&&perdaState[d].trim());
+ // concreto por dia — chegou (betoneiras reais) × utilizado (real) → desperdício
+ const wb=concDia();const cd=Object.keys(wb).sort().filter(d=>d<=today).slice(-14);
+ const mc=Math.max(0.1,...cd.map(d=>wb[d].cheg||0));
+ $('#byconc').innerHTML=cd.length?cd.map(d=>{const o=wb[d];const cheg=o.cheg,util=o.util;const perda=cheg-util;const pct=util?Math.round(perda/util*100):0;const red=util&&perda/util>0.30;const hasC=!!(perdaState[d]&&perdaState[d].trim());
    const pl=(red||hasC)?`<button class="jbtn ${hasC?'has':''}" data-day="${d}" style="padding:1px 5px;font-size:10.5px;margin-top:2px">${red?'🔴':''}${pct}% ${hasC?'📝':'✍️'}</button>`:`<div class="vlab" style="min-height:12px;color:var(--muted)">${pct}%</div>`;
    return `<div class="colw"><div class="vlab" title="chegou ${cheg.toFixed(1)} / utilizado ${util.toFixed(1)} m³">${cheg.toFixed(0)}/${util.toFixed(0)}</div><div class="st"><i style="height:${cheg/mc*100}%;background:var(--brand)"></i><i style="height:${util/mc*100}%;background:var(--ok)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div>${pl}</div>`;}).join(''):`<div style="color:var(--muted);font-size:13px;padding:6px 2px">Sem concreto lançado.</div>`;
 }
 function wasteByDay(){const m={};for(const k in state){const s=state[k];if(s.st!=='Executada'||!s.data)continue;const used=volUtil(s);if(!used)continue;const p=PILES.find(x=>x.k===k);if(!p)continue;const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c);if(!m[s.data])m[s.data]={teor:0,used:0};m[s.data].teor+=teor;m[s.data].used+=used;}return m;}
+function concDia(){const m={};
+ for(const k in state){const s=state[k];if(s.st!=='Executada'||!s.data)continue;const p=PILES.find(x=>x.k===k);if(!p)continue;
+  const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c);const dv=(s.vol1||0)+(s.vol2||0);
+  if(!m[s.data])m[s.data]={util:0,dv:0};m[s.data].util+=teor;m[s.data].dv+=dv;}
+ for(const d in CONC_ENTREGUE){if(!m[d])m[d]={util:0,dv:0};}
+ for(const d in m){m[d].cheg=(CONC_ENTREGUE[d]!=null)?CONC_ENTREGUE[d]:m[d].dv;}
+ return m;}
 function drawCurve(pts,total,today){if(!pts.length){$('#curve').innerHTML='';return;}
  const L=34,Rr=352,T=12,B=150,n=pts.length-1||1;
  const X=i=>L+i*(Rr-L)/n,Y=v=>B-(v/total)*(B-T);
