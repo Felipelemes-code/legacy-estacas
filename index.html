@@ -122,6 +122,8 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
 .cat.MOD{background:var(--ok-bg);color:var(--ok)}.cat.MDI{background:var(--info-bg);color:var(--brand-2)}.cat.Terceiro{background:var(--warn-bg);color:var(--warn)}
 .efrow .lider{flex:none;font-size:17px;line-height:1;opacity:.25;background:none;border:none;padding:0 2px}.efrow .lider.on{opacity:1}
 .efadd{margin-top:14px;padding:12px;border:1px dashed var(--border);border-radius:12px;font-size:12.5px;color:var(--muted);font-weight:700}
+.jbtn{flex:none;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:14px;line-height:1;margin-left:2px}
+.jbtn.has{background:var(--warn-bg);border-color:var(--warn)}
 .calc{background:var(--info-bg);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;margin:4px 0 12px}
 .calc .b{text-align:center}.calc .b .v{font-size:18px;font-weight:800}.calc .b .l{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700}
 .sit{font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px}
@@ -237,14 +239,20 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
   <div class="row2"><div class="fld"><label>Bloco</label><input class="inp" id="m-bloco" placeholder="ex.: B12"></div><div class="fld"><label>Pilar</label><input class="inp" id="m-pilar" placeholder="ex.: P12"></div></div>
   <div class="btbox"><div class="btlab">BT 1 <small>(caminhão principal)</small></div>
     <div class="row2"><div class="fld"><label>Nº BT</label><input class="inp" id="m-bt1" placeholder="caminhão"></div><div class="fld"><label>Nº NF</label><input class="inp" id="m-nf1" placeholder="nota fiscal"></div></div>
-    <div class="row2"><div class="fld"><label>Chegada na obra</label><input class="inp" id="m-hora1" type="time"></div><div class="fld"><label>Vol. usado (m³)</label><input class="inp" id="m-vol1" type="number" step="0.01"></div></div></div>
+    <div class="row2"><div class="fld"><label>Chegada na obra</label><input class="inp" id="m-hora1" type="time"></div><div class="fld"><label>Volume da BT (m³)</label><input class="inp" id="m-vol1" type="number" step="0.01"></div></div></div>
   <div class="btbox"><div class="btlab">BT 2 <small>(transição — opcional)</small></div>
     <div class="row2"><div class="fld"><label>Nº BT</label><input class="inp" id="m-bt2" placeholder="se dividiu 2 BTs"></div><div class="fld"><label>Nº NF</label><input class="inp" id="m-nf2" placeholder="nota fiscal"></div></div>
-    <div class="row2"><div class="fld"><label>Chegada na obra</label><input class="inp" id="m-hora2" type="time"></div><div class="fld"><label>Vol. usado (m³)</label><input class="inp" id="m-vol2" type="number" step="0.01"></div></div></div>
+    <div class="row2"><div class="fld"><label>Chegada na obra</label><input class="inp" id="m-hora2" type="time"></div><div class="fld"><label>Volume da BT (m³)</label><input class="inp" id="m-vol2" type="number" step="0.01"></div></div></div>
   <div class="row2"><div class="fld"><label>Início concr.</label><input class="inp" id="m-ini" type="time"></div><div class="fld"><label>Término</label><input class="inp" id="m-fim" type="time"></div></div>
   <div class="fld"><label>Ocorrências / observações</label><textarea class="inp" id="m-ocor" rows="2" placeholder="Ex.: paralisação por chuva, troca de trado, interferência..."></textarea></div>
   <div class="calc"><div class="b"><div class="v num" id="m-teor">—</div><div class="l">Vol. teórico</div></div><div class="b"><div class="v num" id="m-cons">—</div><div class="l">Consumo</div></div><div class="b"><span class="sit" id="m-sit">—</span></div></div>
   <div class="mf"><button class="btn gh" id="m-cancel">✕</button><button class="btn pri" id="m-save"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Salvar</button></div>
+</div></div>
+<!-- justificativa de perda -->
+<div class="ov" id="jov"><div class="sheet">
+  <div class="grip"></div><h3 id="j-title">Justificativa</h3><div class="sub">Perda de concreto acima do previsto (&gt;30%)</div>
+  <div class="fld"><label>Comentário / justificativa do dia</label><textarea class="inp" id="j-txt" rows="4" placeholder="Ex.: solo arenoso com alargamento do furo; retrabalho na estaca X; perda por caminhão..."></textarea></div>
+  <div class="mf"><button class="btn gh" id="j-cancel">✕</button><button class="btn pri" id="j-save"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Salvar</button></div>
 </div></div>
 <div class="toast" id="toast"></div>
 
@@ -266,13 +274,16 @@ const UKEY='apont_user_v2';
 // cada estaca é única por chave p.k (prédio+nome+índice) — nomes repetem entre prédios
 let state={};      // {k: {st,data,bt1,vol1,bt2,vol2,comp,ini,fim}}
 let btState={};    // {NF: {entregue}}
+let perdaState={}; // {data: comentario/justificativa da perda}
 let user=JSON.parse(localStorage.getItem(UKEY)||'null');
 let curFr='',curStatus='',curId=null,limit=40,lgRole='apontador';
 async function loadAll(){
  if(!sbOn())return;
  const es=await sbSelect('estacas');state={};es.forEach(r=>{state[r.k]={st:r.status,data:r.data_exec||'',bloco:r.bloco||'',pilar:r.pilar||'',bt1:r.bt1||'',nf1:r.nf1||'',hora1:r.hora1||'',vol1:r.vol1,bt2:r.bt2||'',nf2:r.nf2||'',hora2:r.hora2||'',vol2:r.vol2,comp:r.comp_exec,ini:r.ini||'',fim:r.fim||'',ocor:r.ocorrencia||''};});
  const bs=await sbSelect('betoneiras');btState={};bs.forEach(r=>btState[r.nf]={entregue:r.entregue});
+ try{const ps=await sbSelect('perdas');perdaState={};ps.forEach(r=>{perdaState[r.data]=r.comentario||'';});}catch(_){}
 }
+async function upsertPerda(day,txt){try{await sbUpsert('perdas',{data:day,comentario:txt,updated_by:user?user.name:null});setSync('ok');}catch(e){setSync('err');throw e;}}
 async function upsertEstaca(k){const s=state[k],p=PILES.find(x=>x.k===k);setSync('...');
  try{await sbUpsert('estacas',{k,frente:p.fr,nome:p.id,status:s.st,data_exec:s.data||null,bloco:s.bloco||null,pilar:s.pilar||null,bt1:s.bt1||null,nf1:s.nf1||null,hora1:s.hora1||null,vol1:s.vol1,bt2:s.bt2||null,nf2:s.nf2||null,hora2:s.hora2||null,vol2:s.vol2,comp_exec:s.comp,ini:s.ini||null,fim:s.fim||null,ocorrencia:s.ocor||null,updated_by:user?user.name:null});setSync('ok');}
  catch(e){setSync('err');toast('⚠ Falha ao salvar na nuvem');}}
@@ -376,8 +387,9 @@ function dash(){
  $('#byconc').innerHTML=cd.map(d=>`<div class="colw"><div class="st"><i style="height:${(cbd[d]||0)/mc*100}%;width:14px;background:var(--accent)" title="${(cbd[d]||0).toFixed(1)}"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`).join('');
  // desperdício por dia (usado × teórico)
  const wb=wasteByDay();const wd=Object.keys(wb).sort().slice(-14);
- $('#bywaste').innerHTML=wd.length?wd.map(d=>{const o=wb[d];const perda=o.teor?(o.used-o.teor)/o.teor:0;const pct=Math.round(perda*100);const red=perda>0.30;
-   return `<div class="bar"><div class="nm">${d.slice(8)}/${d.slice(5,7)}</div><div class="tr"><i style="width:${Math.min(100,Math.max(2,pct))}%;background:${red?'var(--crit)':'var(--ok)'}"></i></div><div class="vv" style="min-width:64px;text-align:right;color:${red?'var(--crit)':'var(--muted)'};font-weight:800">${red?'🔴 ':''}${pct>=0?'+':''}${pct}%</div></div>`;}).join(''):`<div style="color:var(--muted);font-size:13px;padding:4px 2px">Sem estacas com volume lançado ainda.</div>`;
+ $('#bywaste').innerHTML=wd.length?wd.map(d=>{const o=wb[d];const perda=o.teor?(o.used-o.teor)/o.teor:0;const pct=Math.round(perda*100);const red=perda>0.30;const hasC=!!(perdaState[d]&&perdaState[d].trim());
+   const jb=(red||hasC)?`<button class="jbtn ${hasC?'has':''}" data-day="${d}" title="Ver/escrever justificativa">${hasC?'📝':'✍️'}</button>`:'';
+   return `<div class="bar"><div class="nm">${d.slice(8)}/${d.slice(5,7)}</div><div class="tr"><i style="width:${Math.min(100,Math.max(2,pct))}%;background:${red?'var(--crit)':'var(--ok)'}"></i></div><div class="vv" style="min-width:56px;text-align:right;color:${red?'var(--crit)':'var(--muted)'};font-weight:800">${red?'🔴 ':''}${pct>=0?'+':''}${pct}%</div>${jb}</div>`;}).join(''):`<div style="color:var(--muted);font-size:13px;padding:4px 2px">Sem estacas com volume lançado ainda.</div>`;
 }
 function wasteByDay(){const m={};for(const k in state){const s=state[k];if(s.st!=='Executada'||!s.data)continue;const used=volUtil(s);if(!used)continue;const p=PILES.find(x=>x.k===k);if(!p)continue;const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c);if(!m[s.data])m[s.data]={teor:0,used:0};m[s.data].teor+=teor;m[s.data].used+=used;}return m;}
 function drawCurve(pts,total){if(!pts.length){$('#curve').innerHTML='';return;}
@@ -445,6 +457,14 @@ $('#ef-addbtn').onclick=()=>{const n=$('#ef-newn').value.trim();if(!n)return;con
 $('#ef-save').onclick=async()=>{const eq=efAll().filter(x=>efPresent.has(pkey(x)));setSync('...');
  try{await sbUpsert('efetivo',{data:efDay,lider:efLider||null,equipe_json:JSON.stringify(eq),updated_by:user?user.name:null});setSync('ok');toast('✓ Efetivo salvo ('+eq.length+' pessoas)');}
  catch(e){setSync('err');toast('⚠ Falha ao salvar efetivo');}};
+
+// JUSTIFICATIVA DE PERDA (por dia)
+let curJDay=null;
+function openJustify(day){curJDay=day;$('#j-title').textContent='Justificativa — '+day.split('-').reverse().join('/');$('#j-txt').value=perdaState[day]||'';const ro=!canEdit();$('#j-txt').disabled=ro;$('#j-save').style.display=ro?'none':'flex';$('#jov').classList.add('on');}
+$('#j-cancel').onclick=()=>$('#jov').classList.remove('on');
+$('#jov').onclick=e=>{if(e.target.id==='jov')$('#jov').classList.remove('on');};
+$('#j-save').onclick=async()=>{const txt=$('#j-txt').value.trim();perdaState[curJDay]=txt;setSync('...');try{await upsertPerda(curJDay,txt);$('#jov').classList.remove('on');dash();toast('✓ Justificativa salva');}catch(e){toast('⚠ Falha ao salvar (rodou o SQL?)');}};
+document.addEventListener('click',e=>{const jb=e.target.closest&&e.target.closest('.jbtn');if(jb)openJustify(jb.dataset.day);});
 
 // RESUMO DIÁRIO (WhatsApp)
 function fmtBR(d){if(!d)return'';const a=d.split('-');return a[2]+'/'+a[1]+'/'+a[0];}
