@@ -371,8 +371,8 @@ function chips(){const cnt={};PILES.forEach(p=>cnt[p.fr]=(cnt[p.fr]||0)+1);
  $$('#chips .chip').forEach(b=>b.onclick=()=>{curFr=b.dataset.f;limit=40;chips();render();});}
 function filtered(){const q=$('#q').value.toLowerCase();return PILES.filter(p=>(!curFr||p.fr===curFr)&&(!curStatus||(curStatus==='exec'?isExec(p.k):!isExec(p.k)))&&(!q||(p.id+' '+p.fr).toLowerCase().includes(q)));}
 function render(){const rows=filtered(),show=rows.slice(0,limit);
- $('#list').innerHTML=show.map(p=>{const ex=isExec(p.k);const c=consumo(p);const cc=c==null?'':`<span class="cons ${c>=1?'c-ok':c>=.9?'c-wy':'c-rd'}">${Math.round(c*100)}%</span>`;
-  return `<div class="est ${ex?'done':''}" data-k="${p.k}"><div class="id">${p.id}</div><div class="info"><div>${p.fr}</div><div class="m">Ø${p.d} mm · ${p.c} m</div></div>${ex?`<span class="st st-exec">Executada</span>${cc}`:`<span class="st st-prog">Programada</span>`}<div class="go"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div></div>`;}).join('')||`<div style="text-align:center;color:var(--muted);padding:30px">Nenhuma estaca.</div>`;
+ $('#list').innerHTML=show.map(p=>{const ex=isExec(p.k);
+  return `<div class="est ${ex?'done':''}" data-k="${p.k}"><div class="id">${p.id}</div><div class="info"><div>${p.fr}</div><div class="m">Ø${p.d} mm · ${p.c} m</div></div>${ex?`<span class="st st-exec">Executada</span>`:`<span class="st st-prog">Programada</span>`}<div class="go"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div></div>`;}).join('')||`<div style="text-align:center;color:var(--muted);padding:30px">Nenhuma estaca.</div>`;
  $('#more').style.display=rows.length>limit?'block':'none';$$('#list .est').forEach(e=>e.onclick=()=>openSheet(e.dataset.k));kpis();}
 function kpis(){const real=PILES.filter(p=>isExec(p.k)).length;const conc=PILES.reduce((s,p)=>s+volUtil(state[p.k]),0);
  $('#k-prev').textContent=PILES.length;$('#k-real').textContent=real;$('#k-av').textContent=Math.round(real/PILES.length*100)+'%';$('#k-conc').textContent=conc.toFixed(1);$('#pbar').style.width=(real/PILES.length*100)+'%';}
@@ -445,7 +445,7 @@ function dash(){
  const wb=concDia();const cd=Object.keys(wb).sort().filter(d=>d<=today).slice(-14);
  const mc=Math.max(0.1,...cd.map(d=>wb[d].cheg||0));
  $('#byconc').innerHTML=cd.length?cd.map(d=>{const o=wb[d];const cheg=o.cheg,util=o.util;const perda=cheg-util;const pct=util?Math.round(perda/util*100):0;const red=util&&perda/util>0.30;const hasC=!!(perdaState[d]&&perdaState[d].trim());
-   const pl=(red||hasC)?`<button class="jbtn ${hasC?'has':''}" data-day="${d}" style="padding:1px 5px;font-size:10.5px;margin-top:2px">${red?'🔴':''}${pct}% ${hasC?'📝':'✍️'}</button>`:`<div class="vlab" style="min-height:12px;color:var(--muted)">${pct}%</div>`;
+   const pl=red?`<button class="jbtn ${hasC?'has':''}" data-day="${d}" style="padding:1px 5px;font-size:10.5px;margin-top:2px">🔴${pct}% ${hasC?'📝':'✍️'}</button>`:`<div class="vlab" style="min-height:12px;color:#1f6fe0;font-weight:800">👍🔵${pct}%</div>`;
    return `<div class="colw"><div class="vlab" title="chegou ${cheg.toFixed(1)} / utilizado ${util.toFixed(1)} m³">${cheg.toFixed(0)}/${util.toFixed(0)}</div><div class="st"><i style="height:${cheg/mc*100}%;background:var(--brand)"></i><i style="height:${util/mc*100}%;background:var(--ok)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div>${pl}</div>`;}).join(''):`<div style="color:var(--muted);font-size:13px;padding:6px 2px">Sem concreto lançado.</div>`;
 }
 function wasteByDay(){const m={};for(const k in state){const s=state[k];if(s.st!=='Executada'||!s.data)continue;const used=volUtil(s);if(!used)continue;const p=PILES.find(x=>x.k===k);if(!p)continue;const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c);if(!m[s.data])m[s.data]={teor:0,used:0};m[s.data].teor+=teor;m[s.data].used+=used;}return m;}
