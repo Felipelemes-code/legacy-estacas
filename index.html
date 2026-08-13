@@ -84,6 +84,7 @@
 .bar .tr i{display:block;height:100%;background:var(--brand);border-radius:20px}
 .bar .vv{width:56px;text-align:right;font-weight:700;color:var(--muted)}
 .cols{display:flex;align-items:flex-end;gap:5px;height:110px;padding-top:8px}
+.cols-tall{height:158px}
 .colw{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;min-width:0}
 .colw .st{width:100%;display:flex;gap:2px;align-items:flex-end;flex:1;min-height:0;justify-content:center}
 .colw .st i{width:8px;border-radius:3px 3px 0 0}.colw .x{font-size:8.5px;color:var(--muted)}
@@ -209,13 +210,12 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
       <div class="card"><h3>Curva de Produção <small>· eixo Y = estacas acumuladas</small></h3><svg class="spark" id="curve" viewBox="0 0 360 168"></svg>
         <div class="leg"><span><i style="background:var(--muted-2)"></i>Previsto (16/dia)</span><span><i style="background:var(--brand)"></i>Realizado</span><span><i style="background:var(--brand);opacity:.5"></i>Hoje</span></div></div>
       <div class="card"><h3>Avanço por prédio / frente</h3><div id="byfrente"></div></div>
-      <div class="card"><h3>Betoneiras (BT) <small>· concreto por caminhão</small></h3><div id="btlist"></div>
-        <p style="color:var(--muted);font-size:12px;margin:8px 2px 0">Informe o volume que veio na BT para ver quantas estacas ela atendeu e a sobra.</p></div>
       <div class="card"><h3>Estacas por dia <small>· prev × real</small></h3><div class="cols" id="byday"></div>
         <div class="leg"><span><i style="background:#C9CCE0"></i>Previsto</span><span><i style="background:var(--brand)"></i>Realizado</span></div></div>
-      <div class="card"><h3>Concreto por dia (m³)</h3><div class="cols" id="byconc"></div></div>
-      <div class="card"><h3>Desperdício de concreto por dia <small>· entregue − teórico</small></h3><div id="bywaste"></div>
-        <p style="color:var(--muted);font-size:12px;margin:9px 2px 0">Perda = concreto <b>entregue nas BTs</b> menos o <b>teórico</b> das estacas do dia. 🔴 acende acima de <b>30%</b>; toque no ✍️/📝 para justificar.</p></div>
+      <div class="card"><h3>Concreto por dia <small>· chegou × utilizado = desperdício</small></h3>
+        <div class="cols cols-tall" id="byconc"></div>
+        <div class="leg"><span><i style="background:var(--brand)"></i>Chegou (NF/BT)</span><span><i style="background:var(--ok)"></i>Utilizado real</span></div>
+        <p style="color:var(--muted);font-size:12px;margin:8px 2px 0">Barra azul = concreto que <b>chegou</b> (BTs/NF); verde = <b>utilizado</b> nas estacas (real). A diferença é o <b>desperdício</b> (% abaixo). 🔴 acima de 30% · toque no ✍️/📝 para justificar.</p></div>
     </section>
     <!-- MAPA -->
     <section class="view" id="v-mapa">
@@ -436,18 +436,15 @@ function dash(){
  // por frente
  const cnt={},re={};PILES.forEach(p=>{cnt[p.fr]=(cnt[p.fr]||0)+1;if(isExec(p.k))re[p.fr]=(re[p.fr]||0)+1;});
  $('#byfrente').innerHTML=FRENTES.map(f=>{const t=cnt[f],r=re[f]||0,pc=Math.round(r/t*100);return `<div class="bar"><div class="nm">${f}</div><div class="tr"><i style="width:${pc}%"></i></div><div class="vv">${r}/${t}</div></div>`;}).join('');
- btPanel();
  // por dia (prev x real) — só dias até hoje
  const past=days.filter(d=>d<=today);const dd=past.slice(-14);const mx=Math.max(1,...dd.map(d=>Math.max(pbd[d]||0,rbd[d]||0)));
  $('#byday').innerHTML=dd.map(d=>`<div class="colw"><div class="vlab">${rbd[d]||''}</div><div class="st"><i style="height:${(pbd[d]||0)/mx*100}%;background:#C9CCE0"></i><i style="height:${(rbd[d]||0)/mx*100}%;background:var(--brand)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`).join('');
- // concreto/dia
- const cbd=concByDay();const cd=past.slice(-14);const mc=Math.max(0.1,...cd.map(d=>cbd[d]||0));
- $('#byconc').innerHTML=cd.map(d=>`<div class="colw"><div class="vlab">${(cbd[d]||0)?(cbd[d]).toFixed(1):''}</div><div class="st"><i style="height:${(cbd[d]||0)/mc*100}%;width:14px;background:var(--accent)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`).join('');
- // desperdício por dia (usado × teórico)
- const wb=wasteByDay();const wd=Object.keys(wb).sort().slice(-14);
- $('#bywaste').innerHTML=wd.length?wd.map(d=>{const o=wb[d];const perda=o.used-o.teor;const pct=o.teor?Math.round(perda/o.teor*100):0;const red=o.teor&&perda/o.teor>0.30;const hasC=!!(perdaState[d]&&perdaState[d].trim());
-   const jb=(red||hasC)?`<button class="jbtn ${hasC?'has':''}" data-day="${d}" title="Ver/escrever justificativa">${hasC?'📝':'✍️'}</button>`:'';
-   return `<div class="bar"><div class="nm">${d.slice(8)}/${d.slice(5,7)}</div><div class="tr"><i style="width:${Math.min(100,Math.max(2,pct))}%;background:${red?'var(--crit)':'var(--ok)'}"></i></div><div class="vv" style="min-width:92px;text-align:right;color:${red?'var(--crit)':'var(--muted)'};font-weight:800">${red?'🔴 ':''}${perda>=0?'+':''}${perda.toFixed(1)} m³·${pct}%</div>${jb}</div>`;}).join(''):`<div style="color:var(--muted);font-size:13px;padding:4px 2px">Sem BT lançada ainda.</div>`;
+ // concreto por dia — chegou (BT/NF) × utilizado (real) → desperdício
+ const wb=wasteByDay();const cd=Object.keys(wb).sort().filter(d=>d<=today).slice(-14);
+ const mc=Math.max(0.1,...cd.map(d=>wb[d].used||0));
+ $('#byconc').innerHTML=cd.length?cd.map(d=>{const o=wb[d];const cheg=o.used,util=o.teor;const perda=cheg-util;const pct=util?Math.round(perda/util*100):0;const red=util&&perda/util>0.30;const hasC=!!(perdaState[d]&&perdaState[d].trim());
+   const pl=(red||hasC)?`<button class="jbtn ${hasC?'has':''}" data-day="${d}" style="padding:1px 5px;font-size:10.5px;margin-top:2px">${red?'🔴':''}${pct}% ${hasC?'📝':'✍️'}</button>`:`<div class="vlab" style="min-height:12px;color:var(--muted)">${pct}%</div>`;
+   return `<div class="colw"><div class="vlab" title="chegou ${cheg.toFixed(1)} / utilizado ${util.toFixed(1)} m³">${cheg.toFixed(0)}/${util.toFixed(0)}</div><div class="st"><i style="height:${cheg/mc*100}%;background:var(--brand)"></i><i style="height:${util/mc*100}%;background:var(--ok)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div>${pl}</div>`;}).join(''):`<div style="color:var(--muted);font-size:13px;padding:6px 2px">Sem concreto lançado.</div>`;
 }
 function wasteByDay(){const m={};for(const k in state){const s=state[k];if(s.st!=='Executada'||!s.data)continue;const used=volUtil(s);if(!used)continue;const p=PILES.find(x=>x.k===k);if(!p)continue;const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c);if(!m[s.data])m[s.data]={teor:0,used:0};m[s.data].teor+=teor;m[s.data].used+=used;}return m;}
 function drawCurve(pts,total,today){if(!pts.length){$('#curve').innerHTML='';return;}
