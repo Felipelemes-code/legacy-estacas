@@ -193,6 +193,7 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
       <div class="card" style="margin-bottom:12px">
         <div class="row2"><div class="fld" style="margin:0"><label>Dia</label><input class="inp" id="ef-date" type="date"></div>
           <div class="fld" style="margin:0"><label>Líder / Encarregado</label><input class="inp" id="ef-lider" list="ef-names" placeholder="nome do encarregado"></div></div>
+        <button class="btn gh" id="ef-copy" style="width:100%;margin-top:10px;flex:1"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Repetir equipe do dia anterior</button>
       </div>
       <div class="efsum" id="ef-sum"></div>
       <div class="togg" id="ef-filter"><button data-c="" class="on">Todos</button><button data-c="ENGEKO">ENGEKO</button><button data-c="TERC">Terceiros</button></div>
@@ -444,7 +445,17 @@ function efListRender(){
    `<div class="who"><b>${x.n}</b><small>${x.f||''}</small></div>`+
    `<span class="cat ${x.t?'Terceiro':'MOD'}">${tag}</span></div>`;}).join('')||`<div style="text-align:center;color:var(--muted);padding:20px">Ninguém encontrado.</div>`;
  $('#ef-names').innerHTML=LEADERS.map(x=>`<option value="${x.n}">`).join('');
- const ro=!canEdit();$('#ef-save').style.display=ro?'none':'flex';const ad=$('.efadd');if(ad)ad.style.display=ro?'none':'block';}
+ const ro=!canEdit();$('#ef-save').style.display=ro?'none':'flex';const ad=$('.efadd');if(ad)ad.style.display=ro?'none':'block';const cp=$('#ef-copy');if(cp)cp.style.display=ro?'none':'flex';}
+async function efCopyPrev(){if(!sbOn()||!efDay)return;setSync('...');
+ try{const r=await fetch(`${SB_URL}/rest/v1/efetivo?data=lt.${efDay}&order=data.desc&limit=1&select=*`,{headers:sbHead});const rows=await r.json();
+  if(!rows||!rows[0]){setSync('ok');toast('Nenhum efetivo anterior encontrado');return;}
+  const src=rows[0];let eq=[];try{eq=JSON.parse(src.equipe_json||'[]');}catch(_){}
+  efLider=src.lider||'';efPresent=new Set();efExtra=[];
+  eq.forEach(x=>{efPresent.add(pkey(x));if(!efBase().some(y=>pkey(y)===pkey(x)))efExtra.push(x);});
+  $('#ef-lider').value=efLider;efSummary();efListRender();setSync('ok');
+  toast('📋 Equipe de '+src.data.split('-').reverse().join('/')+' copiada — edite e salve');
+ }catch(e){setSync('err');toast('Falha ao buscar dia anterior');}}
+$('#ef-copy').onclick=efCopyPrev;
 function efetRender(){
  if(!efDay){const d=new Date().toISOString().slice(0,10);$('#ef-date').value=d;efLoad(d).then(()=>{$('#ef-lider').value=efLider;efSummary();efListRender();});}
  else{$('#ef-lider').value=efLider;efSummary();efListRender();}}
@@ -482,7 +493,7 @@ async function waResumo(){
  const ef=await efInfo(day);
  let efBlk='';
  if(ef){efBlk=`\n👷 Encarregado: ${ef.lider||'—'}`;
-  if(ef.eq&&ef.eq.length){efBlk+=`\n👥 Equipe do dia (${ef.eq.length}):\n`+ef.eq.map(x=>`• ${x.n}${x.t?' ('+(x.e||'terceiro')+')':''}`).join('\n');}}
+  if(ef.eq&&ef.eq.length){efBlk+=`\n👥 Equipe do dia (${ef.eq.length}):\n`+ef.eq.map(x=>`• ${x.n}${x.f?' — '+x.f:''}${x.t?' ('+(x.e||'terceiro')+')':''}`).join('\n');}}
  const head=`🏗️ ESTACAS HÉLICE — Legacy / Nestlé Araras\n📅 ${fmtBR(day)}\n✅ Executadas: ${list.length}`;
  const body=list.length?'\n\n'+lines.join('\n'):'\n\n(nenhuma estaca executada nesta data)';
  const foot=`\n\n${list.length?'🧱 Concreto do dia: '+nBR(conc)+' m³':''}${efBlk}\n📝 Apontador: ${user?user.name:''}`;
