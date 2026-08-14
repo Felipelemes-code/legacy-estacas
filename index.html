@@ -317,7 +317,7 @@ let state={};      // {k: {st,data,bt1,vol1,bt2,vol2,comp,ini,fim}}
 let btState={};    // {NF: {entregue}}
 let perdaState={}; // {data: comentario/justificativa da perda}
 // concreto ENTREGUE por dia (betoneiras reais × volume) — informado pela obra
-const CONC_ENTREGUE={'2026-08-05':21,'2026-08-06':36,'2026-08-07':14,'2026-08-10':14,'2026-08-11':45,'2026-08-12':64,'2026-08-13':52};
+const CONC_ENTREGUE={'2026-08-05':21,'2026-08-06':36,'2026-08-07':14,'2026-08-10':14,'2026-08-11':45,'2026-08-12':64};
 let user=JSON.parse(localStorage.getItem(UKEY)||'null');
 let curFr='',curStatus='',curId=null,limit=40,lgRole='apontador';
 async function loadAll(){
@@ -456,10 +456,12 @@ function dash(){
 function wasteByDay(){const m={};for(const k in state){const s=state[k];if(s.st!=='Executada'||!s.data)continue;const used=volUtil(s);if(!used)continue;const p=PILES.find(x=>x.k===k);if(!p)continue;const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c);if(!m[s.data])m[s.data]={teor:0,used:0};m[s.data].teor+=teor;m[s.data].used+=used;}return m;}
 function concDia(){const m={};
  for(const k in state){const s=state[k];if(s.st!=='Executada'||!s.data)continue;const p=PILES.find(x=>x.k===k);if(!p)continue;
-  const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c);const dv=(s.vol1||0)+(s.vol2||0);
-  if(!m[s.data])m[s.data]={util:0,dv:0};m[s.data].util+=teor;m[s.data].dv+=dv;}
- for(const d in CONC_ENTREGUE){if(!m[d])m[d]={util:0,dv:0};}
- for(const d in m){m[d].cheg=(CONC_ENTREGUE[d]!=null)?CONC_ENTREGUE[d]:m[d].dv;}
+  const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c);
+  if(!m[s.data])m[s.data]={util:0,nf:{}};m[s.data].util+=teor;
+  if(s.nf1&&s.vol1)m[s.data].nf[s.nf1]=s.vol1;   // volume por NF (cada NF conta 1x, não acumula)
+  if(s.nf2&&s.vol2)m[s.data].nf[s.nf2]=s.vol2;}
+ for(const d in CONC_ENTREGUE){if(!m[d])m[d]={util:0,nf:{}};}
+ for(const d in m){let nfsum=0;for(const nf in m[d].nf)nfsum+=m[d].nf[nf];m[d].cheg=(CONC_ENTREGUE[d]!=null)?CONC_ENTREGUE[d]:nfsum;}
  return m;}
 function drawCurve(pts,total,today){if(!pts.length){$('#curve').innerHTML='';return;}
  const L=34,Rr=352,T=12,B=150,n=pts.length-1||1;
