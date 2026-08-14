@@ -212,7 +212,7 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
       <div class="card"><h3>Avanço por prédio / frente</h3><div id="byfrente"></div></div>
       <div class="card"><h3>Estacas por dia <small>· prev × real</small></h3><div class="cols" id="byday"></div>
         <div class="leg"><span><i style="background:#C9CCE0"></i>Previsto</span><span><i style="background:var(--brand)"></i>Realizado</span></div></div>
-      <div class="card"><h3>Concreto por dia <small>· chegou × utilizado = desperdício</small></h3>
+      <div class="card" id="card-conc"><h3>Concreto por dia <small>· chegou (NF) × utilizado (teórico) = desperdício</small></h3>
         <div class="cols cols-tall" id="byconc"></div>
         <div class="leg"><span><i style="background:var(--brand)"></i>Chegou (NF/BT)</span><span><i style="background:var(--ok)"></i>Utilizado real</span></div>
         <p style="color:var(--muted);font-size:12px;margin:8px 2px 0">Barra azul = concreto que <b>chegou</b> (BTs/NF); verde = <b>utilizado</b> nas estacas (real). A diferença é o <b>desperdício</b> (% abaixo). 🔴 acima de 30% · toque no ✍️/📝 para justificar.</p></div>
@@ -358,6 +358,7 @@ function startApp(){$('#login').classList.add('hidden');$('#appwrap').classList.
  const cli=user.role==='cliente';   // cliente: só Painel e Mapa, sem editar/extrair
  ['est','efet','exp'].forEach(v=>{const b=$('#nav button[data-v="'+v+'"]');if(b)b.style.display=cli?'none':'';});
  const md=$('#map-dl');if(md)md.style.display=cli?'none':'';
+ const cc=$('#card-conc');if(cc)cc.style.display=cli?'none':'';   // cliente não vê concreto/dia (em ajuste)
  chips();render();dash();expSum();setSync(sbOn()?'ok':'err');
  if(cli){const db=$('#nav button[data-v="dash"]');if(db)db.click();}}
 async function refresh(){if(!sbOn())return;try{await loadAll();setSync('ok');if(user&&!$('#ov').classList.contains('on')){render();dash();expSum();}}catch(e){setSync('err');}}
