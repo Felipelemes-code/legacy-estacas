@@ -341,8 +341,8 @@ function btUsage(){const m={};for(const k in state){const s=state[k];[['bt1','vo
 
 // LOGIN
 // Cada código define o nível de acesso da pessoa
-const CODES={'ESTACA-2026':'apontador','GESTAO-2026':'gestao','ADMIN-2026':'admin'};
-const ROLE_LABEL={apontador:'Apontador — lança estacas',gestao:'Gestão — visualiza painéis',admin:'Admin — acesso total'};
+const CODES={'ESTACA-2026':'apontador','GESTAO-2026':'gestao','ADMIN-2026':'admin','CLIENTE-2026':'cliente'};
+const ROLE_LABEL={apontador:'Apontador — lança estacas',gestao:'Gestão — visualiza painéis',admin:'Admin — acesso total',cliente:'Cliente — só painel e mapa'};
 $('#lg-code').addEventListener('input',()=>{$('#lg-err').style.display='none';
  const r=CODES[($('#lg-code').value||'').trim().toUpperCase()];
  const w=$('#lg-who');if(r){w.textContent='✓ '+ROLE_LABEL[r];w.style.display='block';}else{w.style.display='none';}});
@@ -353,9 +353,13 @@ $('#lg-enter').onclick=()=>{
  const n=$('#lg-name').value.trim()||ROLE_LABEL[role].split(' ')[0];
  user={name:n,role};localStorage.setItem(UKEY,JSON.stringify(user));startApp();};
 function startApp(){$('#login').classList.add('hidden');$('#appwrap').classList.remove('hidden');
- $('#hd-user').textContent=user.name.split(' ')[0]+' · '+({apontador:'Apont.',gestao:'Gestão',admin:'Admin'}[user.role]);
+ $('#hd-user').textContent=user.name.split(' ')[0]+' · '+({apontador:'Apont.',gestao:'Gestão',admin:'Admin',cliente:'Cliente'}[user.role]);
  $('#hd-date').textContent='📅 '+fmtBR(TODAY());
- chips();render();dash();expSum();setSync(sbOn()?'ok':'err');}
+ const cli=user.role==='cliente';   // cliente: só Painel e Mapa, sem editar/extrair
+ ['est','efet','exp'].forEach(v=>{const b=$('#nav button[data-v="'+v+'"]');if(b)b.style.display=cli?'none':'';});
+ const md=$('#map-dl');if(md)md.style.display=cli?'none':'';
+ chips();render();dash();expSum();setSync(sbOn()?'ok':'err');
+ if(cli){const db=$('#nav button[data-v="dash"]');if(db)db.click();}}
 async function refresh(){if(!sbOn())return;try{await loadAll();setSync('ok');if(user&&!$('#ov').classList.contains('on')){render();dash();expSum();}}catch(e){setSync('err');}}
 (async()=>{if(!sbOn()){$('#cfgwarn').style.display='block';}await refresh();if(user)startApp();})();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
@@ -587,9 +591,12 @@ async function waResumo(){
  let efBlk='';
  if(ef){efBlk=`\n👷 Encarregado: ${ef.lider||'—'}`;
   if(ef.eq&&ef.eq.length){efBlk+=`\n👥 Equipe do dia (${ef.eq.length}):\n`+ef.eq.map(x=>`• ${x.n}${x.f?' — '+x.f:''}${x.t?' ('+(x.e||'terceiro')+')':''}`).join('\n');}}
+ const cdd=concDia()[day];let concBlk='';
+ if(cdd){const cheg=cdd.cheg,util=cdd.util,perda=cheg-util,pct=util?Math.round(perda/util*100):0;
+  concBlk=`\n\n🧱 Concreto do dia:\n• Chegou: ${nBR(cheg)} m³\n• Utilizado: ${nBR(util)} m³\n• Desperdício: ${nBR(perda)} m³ (${pct}%) ${pct>30?'🔴':'👍'}`;}
  const head=`🏗️ ESTACAS HÉLICE — Legacy / Nestlé Araras\n📅 ${fmtBR(day)}\n✅ Executadas: ${list.length}`;
  const body=list.length?'\n\n'+lines.join('\n'):'\n\n(nenhuma estaca executada nesta data)';
- const foot=`\n\n${list.length?'🧱 Concreto do dia: '+nBR(conc)+' m³':''}${efBlk}\n📝 Apontador: ${user?user.name:''}`;
+ const foot=`${concBlk}${efBlk}\n📝 Apontador: ${user?user.name:''}`;
  return head+body+foot;}
 function initWA(){const el=$('#wa-date');if(el&&!el.value)el.value=new Date().toISOString().slice(0,10);}
 document.addEventListener('click',async e=>{if(e.target.closest&&e.target.closest('#btn-wa')){const txt=await waResumo();
