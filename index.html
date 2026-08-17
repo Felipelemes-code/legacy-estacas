@@ -512,7 +512,7 @@ $('#map-fr').addEventListener('click',e=>{const b=e.target.closest('button');if(
 $('#map-dl').onclick=()=>{const M=MAPS[mapFr];if(!M){toast('Mapa desta frente em preparação');return;}
  const done=new Set();for(const k in state){if(state[k].st!=='Executada')continue;const p=PILES.find(x=>x.k===k);if(!p||p.fr!==mapFr)continue;const num=parseInt(String(p.id).replace(/\D/g,''));if(num)done.add(num);}
  const img=new Image();img.onload=()=>{const cv=document.createElement('canvas');cv.width=img.naturalWidth;cv.height=img.naturalHeight;const c=cv.getContext('2d');c.drawImage(img,0,0);
-  const r=Math.max(5,cv.width/260);
+  const r=(mapFr==='Prensa-Pluma'?22:12)*(cv.width/920)/2;   // mesmo tamanho da tela, preenche a estaca
   Object.entries(M.pos).forEach(([n,xy])=>{if(!done.has(+n))return;const x=xy[0]*cv.width,y=xy[1]*cv.height;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fillStyle='#1eb85a';c.fill();c.lineWidth=Math.max(1,r/3);c.strokeStyle='#0f7a3a';c.stroke();});
   const a=document.createElement('a');a.href=cv.toDataURL('image/jpeg',0.9);a.download='Mapa_'+mapFr.replace(/[^A-Za-z]/g,'')+'_'+new Date().toISOString().slice(0,10)+'.jpg';a.click();toast('🗺️ Mapa baixado ('+done.size+' executadas)');};
  img.onerror=()=>toast('Falha ao gerar imagem');img.src=M.img;};
