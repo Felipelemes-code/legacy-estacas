@@ -146,6 +146,7 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
 .mlayer{position:absolute;inset:0;pointer-events:none}
 .mdot{position:absolute;width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%);border:1.5px solid rgba(110,110,110,.55);background:transparent;box-sizing:border-box}
 .mdot.done{background:#1eb85a;border-color:#0f7a3a;box-shadow:0 0 0 1.5px #fff}
+.mapinner.mbig .mdot{width:22px;height:22px;border-width:2.5px}
 .calc{background:var(--info-bg);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;margin:4px 0 12px}
 .calc .b{text-align:center}.calc .b .v{font-size:18px;font-weight:800}.calc .b .l{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700}
 .sit{font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px}
@@ -505,7 +506,7 @@ function mapRender(){const M=MAPS[mapFr];const box=$('#mapbox');
  if(!M){box.innerHTML=`<div style="padding:26px;text-align:center;color:var(--muted)">Mapa desta frente em preparação.</div>`;$('#map-count').textContent='';return;}
  const done=new Set();for(const k in state){if(state[k].st!=='Executada')continue;const p=PILES.find(x=>x.k===k);if(!p||p.fr!==mapFr)continue;const num=parseInt(String(p.id).replace(/\D/g,''));if(num)done.add(num);}
  const dots=Object.entries(M.pos).map(([n,xy])=>{const on=done.has(+n);return `<span class="mdot ${on?'done':''}" style="left:${(xy[0]*100).toFixed(2)}%;top:${(xy[1]*100).toFixed(2)}%" title="E${n}"></span>`;}).join('');
- box.innerHTML=`<div class="mapinner"><img class="mapimg" src="${M.img}" alt="Croqui ${mapFr}"><div class="mlayer">${dots}</div></div>`;
+ box.innerHTML=`<div class="mapinner${mapFr==='Prensa-Pluma'?' mbig':''}"><img class="mapimg" src="${M.img}" alt="Croqui ${mapFr}"><div class="mlayer">${dots}</div></div>`;
  $('#map-count').textContent='· '+done.size+' executadas';}
 $('#map-fr').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$$('#map-fr button').forEach(x=>x.classList.remove('on'));b.classList.add('on');mapFr=b.dataset.f;mapRender();});
 $('#map-dl').onclick=()=>{const M=MAPS[mapFr];if(!M){toast('Mapa desta frente em preparação');return;}
