@@ -261,6 +261,13 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
         <input type="date" id="wa-date" class="inp" style="max-width:220px;margin:10px auto 0">
         <button class="btn pri" id="btn-wa" style="margin-top:10px;background:#25D366;color:#08351d"><svg viewBox="0 0 24 24"><path d="M8 12h8M8 8h8M8 16h5M4 4h16v12H7l-3 3z"/></svg>Copiar resumo do dia</button>
       </div>
+      <div class="exp" style="margin-top:14px">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
+        <h3 style="margin:0">Relatório de NFs × Concreto</h3>
+        <p style="color:var(--muted);font-size:13px;margin:6px 0 0">Cada <b>nota fiscal</b> com volume, BT, data e as estacas que atendeu.</p>
+        <p style="color:var(--muted);font-size:12px" id="nf-sum"></p>
+        <button class="btn pri" id="btn-nf" style="margin-top:6px"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 10l5 5 5-5M5 21h14"/></svg>Baixar NFs × concreto (.csv)</button>
+      </div>
       <div class="ro-note">Os dados são gravados no banco compartilhado (Supabase) e atualizam em todos os aparelhos automaticamente.</div>
     </section>
   </div>
@@ -380,7 +387,7 @@ function render(){const rows=filtered(),show=rows.slice(0,limit);
  $('#list').innerHTML=show.map(p=>{const ex=isExec(p.k);
   return `<div class="est ${ex?'done':''}" data-k="${p.k}"><div class="id">${p.id}</div><div class="info"><div>${p.fr}</div><div class="m">Ø${p.d} mm · ${p.c} m</div></div>${ex?`<span class="st st-exec">Executada</span>`:`<span class="st st-prog">Programada</span>`}<div class="go"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div></div>`;}).join('')||`<div style="text-align:center;color:var(--muted);padding:30px">Nenhuma estaca.</div>`;
  $('#more').style.display=rows.length>limit?'block':'none';$$('#list .est').forEach(e=>e.onclick=()=>openSheet(e.dataset.k));kpis();}
-function kpis(){const real=PILES.filter(p=>isExec(p.k)).length;const conc=PILES.reduce((s,p)=>s+volUtil(state[p.k]),0);
+function kpis(){const real=PILES.filter(p=>isExec(p.k)).length;const conc=Object.values(concDia()).reduce((s,o)=>s+(o.cheg||0),0);
  $('#k-prev').textContent=PILES.length;$('#k-real').textContent=real;$('#k-av').textContent=Math.round(real/PILES.length*100)+'%';$('#k-conc').textContent=conc.toFixed(1);$('#pbar').style.width=(real/PILES.length*100)+'%';}
 $('#q').oninput=()=>{limit=40;render();};
 $('#togg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$$('#togg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');curStatus=b.dataset.s;limit=40;render();});
@@ -492,7 +499,19 @@ function btPanel(){const u=btUsage();const nfs=Object.keys(u).sort((a,b)=>a.loca
    `<div class="btsobra ${sobra==null?'':sobra<-0.001?'neg':'pos'}">${sobra==null?'—':(sobra>=0?'sobra ':'falta ')+Math.abs(sobra).toFixed(2)}</div></div>`;}).join('');
  $$('#btlist .bt-inp').forEach(el=>el.onchange=()=>{const v=parseFloat(el.value)||0;btState[el.dataset.nf]={entregue:v};btPanel();upsertBt(el.dataset.nf);});}
 // EXPORT
-function expSum(){const real=PILES.filter(p=>isExec(p.k)).length;$('#exp-sum').textContent=`${PILES.length} estacas · ${real} executadas · gerado por ${user?user.name:''}`;}
+function expSum(){const real=PILES.filter(p=>isExec(p.k)).length;$('#exp-sum').textContent=`${PILES.length} estacas · ${real} executadas · gerado por ${user?user.name:''}`;nfSum();}
+function nfReport(){const m={};
+ for(const k in state){const s=state[k];if(s.st!=='Executada')continue;const p=PILES.find(x=>x.k===k);if(!p)continue;
+  [['nf1','vol1','bt1'],['nf2','vol2','bt2']].forEach(([nfF,volF,btF])=>{const n=(s[nfF]||'').trim();if(!n)return;
+   if(!m[n])m[n]={nf:n,data:s.data||'',vol:s[volF]||0,bt:(s[btF]||'').trim(),est:[]};m[n].est.push(p.fr+' '+p.id);});}
+ return Object.values(m).sort((a,b)=>((a.data||'')+a.nf).localeCompare((b.data||'')+b.nf));}
+function nfSum(){const el=$('#nf-sum');if(!el)return;const r=nfReport();const tot=r.reduce((s,x)=>s+(x.vol||0),0);el.textContent=`${r.length} NFs · ${tot.toFixed(1)} m³ de concreto`;}
+$('#btn-nf').onclick=()=>{const r=nfReport();
+ const H=['NF','Data','BT','Volume (m³)','Nº estacas','Estacas atendidas'];
+ const rows=r.map(x=>[x.nf,x.data,x.bt,x.vol,x.est.length,x.est.join(' / ')]);
+ const tot=r.reduce((s,x)=>s+(x.vol||0),0);rows.push(['TOTAL','','',tot.toFixed(2),'','']);
+ const csv='﻿'+[H,...rows].map(rr=>rr.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\r\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='NFs_Concreto_Legacy_'+new Date().toISOString().slice(0,10)+'.csv';a.click();toast('📄 Relatório de NFs baixado');};
 $('#btn-export').onclick=()=>{
  const H=['Nº','Frente','Estaca','Bloco','Pilar','Ø (mm)','Comp projeto (m)','Status','Data exec','BT1','NF1','Chegada BT1','Vol BT1 (m³)','BT2','NF2','Chegada BT2','Vol BT2 (m³)','Comp exec (m)','Vol utilizado (m³)','Vol teórico (m³)','Consumo (%)','Situação','Início concr.','Término','Ocorrências'];
  const rows=PILES.map((p,i)=>{const s=state[p.k]||{};const comp=s.comp||p.c;const t=Math.PI*Math.pow(p.d/2000,2)*comp;const v=volUtil(s);const c=v?v/t:'';const sit=c===''?'':c<1?'VERIFICAR':c>1.5?'SOBRECONSUMO':'CONFORME';
