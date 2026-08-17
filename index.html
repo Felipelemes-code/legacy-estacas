@@ -145,7 +145,7 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
 .mapimg{width:100%;display:block}
 .mlayer{position:absolute;inset:0;pointer-events:none}
 .mdot{position:absolute;width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%);border:1.5px solid rgba(110,110,110,.55);background:transparent;box-sizing:border-box}
-.mdot.done{background:#ffd21a;border-color:#c98f00;box-shadow:0 0 0 1.5px #fff}
+.mdot.done{background:#1eb85a;border-color:#0f7a3a;box-shadow:0 0 0 1.5px #fff}
 .calc{background:var(--info-bg);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;margin:4px 0 12px}
 .calc .b{text-align:center}.calc .b .v{font-size:18px;font-weight:800}.calc .b .l{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700}
 .sit{font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px}
@@ -222,7 +222,7 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
       <div class="card" style="margin-bottom:10px">
         <h3 style="margin:0 0 8px">Mapa de execução <small id="map-count">·</small></h3>
         <div class="togg" id="map-fr"><button data-f="Extração" class="on">Extração</button><button data-f="Prensa-Pluma">Prensa-Pluma</button></div>
-        <div class="leg" style="margin-top:8px"><span><i style="background:#ffd21a;border:1px solid #e0a800"></i>Executada</span><span><i style="background:transparent;border:1.5px solid #999"></i>A executar</span></div>
+        <div class="leg" style="margin-top:8px"><span><i style="background:#1eb85a;border:1px solid #0f7a3a"></i>Executada</span><span><i style="background:transparent;border:1.5px solid #999"></i>A executar</span></div>
         <button class="btn pri" id="map-dl" style="margin-top:10px"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 10l5 5 5-5M5 21h14"/></svg>Baixar imagem do mapa</button>
       </div>
       <div id="mapbox"></div>
@@ -512,7 +512,7 @@ $('#map-dl').onclick=()=>{const M=MAPS[mapFr];if(!M){toast('Mapa desta frente em
  const done=new Set();for(const k in state){if(state[k].st!=='Executada')continue;const p=PILES.find(x=>x.k===k);if(!p||p.fr!==mapFr)continue;const num=parseInt(String(p.id).replace(/\D/g,''));if(num)done.add(num);}
  const img=new Image();img.onload=()=>{const cv=document.createElement('canvas');cv.width=img.naturalWidth;cv.height=img.naturalHeight;const c=cv.getContext('2d');c.drawImage(img,0,0);
   const r=Math.max(5,cv.width/260);
-  Object.entries(M.pos).forEach(([n,xy])=>{if(!done.has(+n))return;const x=xy[0]*cv.width,y=xy[1]*cv.height;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fillStyle='#ffd21a';c.fill();c.lineWidth=Math.max(1,r/3);c.strokeStyle='#c98f00';c.stroke();});
+  Object.entries(M.pos).forEach(([n,xy])=>{if(!done.has(+n))return;const x=xy[0]*cv.width,y=xy[1]*cv.height;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fillStyle='#1eb85a';c.fill();c.lineWidth=Math.max(1,r/3);c.strokeStyle='#0f7a3a';c.stroke();});
   const a=document.createElement('a');a.href=cv.toDataURL('image/jpeg',0.9);a.download='Mapa_'+mapFr.replace(/[^A-Za-z]/g,'')+'_'+new Date().toISOString().slice(0,10)+'.jpg';a.click();toast('🗺️ Mapa baixado ('+done.size+' executadas)');};
  img.onerror=()=>toast('Falha ao gerar imagem');img.src=M.img;};
 
