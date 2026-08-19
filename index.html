@@ -609,7 +609,8 @@ async function waResumo(){
   const bp=[s.bloco&&('Bloco '+s.bloco),s.pilar&&('Pilar '+s.pilar)].filter(Boolean).join(' / ');
   const bt=[s.bt1,s.bt2].filter(Boolean).join('+');
   const hora=(s.ini||s.fim)?` ⏱ ${s.ini||'—'}→${s.fim||'—'}`:'';
-  return `• ${p.id} (${p.fr})${bp?' — '+bp:''}${hora}${bt?' — BT '+bt:''}${v?' — '+nBR(v)+' m³':''}`;});
+  const oc=s.ocor?`\n   📝 ${s.ocor}`:'';
+  return `• ${p.id} (${p.fr})${bp?' — '+bp:''}${hora}${bt?' — BT '+bt:''}${v?' — '+nBR(v)+' m³':''}${oc}`;});
  const ef=await efInfo(day);
  let efBlk='';
  if(ef){efBlk=`\n👷 Encarregado: ${ef.lider||'—'}`;
