@@ -457,8 +457,9 @@ function dash(){
  // concreto por dia — chegou (NF, cada uma 1x) × utilizado real (perfuração)
  const wb=concDia();const cd=Object.keys(wb).sort().filter(d=>d<=today).slice(-14);
  const mc=Math.max(0.1,...cd.map(d=>Math.max(wb[d].cheg||0,wb[d].util||0)));
- $('#byconc').innerHTML=cd.length?cd.map(d=>{const o=wb[d];const cheg=o.cheg,util=o.util;
-   return `<div class="colw"><div class="vlab" title="chegou ${cheg.toFixed(1)} / utilizado real ${util.toFixed(1)} m³">${cheg.toFixed(0)}/${util.toFixed(0)}</div><div class="st"><i style="height:${cheg/mc*100}%;background:var(--brand)"></i><i style="height:${util/mc*100}%;background:var(--ok)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`;}).join(''):`<div style="color:var(--muted);font-size:13px;padding:6px 2px">Sem concreto lançado.</div>`;
+ $('#byconc').innerHTML=cd.length?cd.map(d=>{const o=wb[d];const cheg=o.cheg,util=o.util;const dif=cheg-util;const pct=util?Math.round(dif/util*100):0;const red=util&&dif/util>0.30;const hasC=!!(perdaState[d]&&perdaState[d].trim());
+   const pl=red?`<button class="jbtn ${hasC?'has':''}" data-day="${d}" style="padding:1px 5px;font-size:10.5px;margin-top:2px">🔴${pct}% ${hasC?'📝':'✍️'}</button>`:`<div class="vlab" style="min-height:12px;color:#1f6fe0;font-weight:800">👍🔵${pct}%</div>`;
+   return `<div class="colw"><div class="vlab" title="chegou ${cheg.toFixed(1)} / utilizado real ${util.toFixed(1)} m³">${cheg.toFixed(0)}/${util.toFixed(0)}</div><div class="st"><i style="height:${cheg/mc*100}%;background:var(--brand)"></i><i style="height:${util/mc*100}%;background:var(--ok)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div>${pl}</div>`;}).join(''):`<div style="color:var(--muted);font-size:13px;padding:6px 2px">Sem concreto lançado.</div>`;
 }
 function wasteByDay(){const m={};for(const k in state){const s=state[k];if(s.st!=='Executada'||!s.data)continue;const used=volUtil(s);if(!used)continue;const p=PILES.find(x=>x.k===k);if(!p)continue;const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c);if(!m[s.data])m[s.data]={teor:0,used:0};m[s.data].teor+=teor;m[s.data].used+=used;}return m;}
 function concDia(){const m={};
