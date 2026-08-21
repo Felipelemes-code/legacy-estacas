@@ -214,6 +214,7 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
       <div class="card"><h3>Estacas por dia <small>· prev × real</small></h3><div class="cols" id="byday"></div>
         <div class="leg"><span><i style="background:#C9CCE0"></i>Previsto</span><span><i style="background:var(--brand)"></i>Realizado</span></div></div>
       <div class="card" id="card-conc"><h3>Concreto por dia <small>· chegou (NF) × utilizado real (perfuração)</small></h3>
+        <div id="conc-tot" style="display:flex;gap:8px;margin:4px 0 12px"></div>
         <div class="cols cols-tall" id="byconc"></div>
         <div class="leg"><span><i style="background:var(--brand)"></i>Chegou (NF/BT)</span><span><i style="background:var(--ok)"></i>Utilizado real</span></div>
         <p style="color:var(--muted);font-size:12px;margin:8px 2px 0">Barra azul = concreto que <b>chegou</b> (cada NF contada uma vez, sem repetir); verde = <b>utilizado real</b> nas estacas (projeto + 0,5 m de perfuração, com +30% de consumo).</p></div>
@@ -341,7 +342,10 @@ async function upsertEstaca(k){const s=state[k],p=PILES.find(x=>x.k===k);setSync
  catch(e){setSync('err');toast('⚠ Falha ao salvar na nuvem');}}
 async function upsertBt(nf){try{await sbUpsert('betoneiras',{nf,entregue:btState[nf].entregue});setSync('ok');}catch(e){setSync('err');}}
 function setSync(s){const el=$('#sync');if(!el)return;el.className='sync '+(s==='ok'?'s-ok':s==='err'?'s-err':'s-wait');el.textContent=s==='ok'?'● sincronizado':s==='err'?'● offline':'● salvando…';}
-const volUtil=s=>((s&&s.vol1)||0)+((s&&s.vol2)||0);
+// nº de estacas que usaram cada NF no dia (p/ dividir volume compartilhado)
+function nfCntDay(day){const m={};for(const k in state){const s=state[k];if(s.st!=='Executada'||s.data!==day)continue;[s.nf1,s.nf2].forEach(nf=>{nf=(nf||'').trim();if(nf)m[nf]=(m[nf]||0)+1;});}return m;}
+// volume da estaca: cada NF/BT dividida entre as estacas que a consumiram (sem duplicar)
+function volUtil(s){if(!s)return 0;const cnt=s.data?nfCntDay(s.data):null;let v=0;[[s.nf1,s.vol1],[s.nf2,s.vol2]].forEach(([nf,vol])=>{if(!vol)return;nf=(nf||'').trim();v+=(nf&&cnt&&cnt[nf]>1)?vol/cnt[nf]:vol;});return v;}
 function consumo(p){const s=state[p.k];const v=volUtil(s);if(!v)return null;return v/(Math.PI*Math.pow(p.d/2000,2)*((s&&s.comp)||p.c));}
 const isExec=k=>state[k]&&state[k].st==='Executada';
 const canEdit=()=>user&&(user.role==='apontador'||user.role==='admin');
@@ -458,8 +462,10 @@ function dash(){
  // concreto por dia — chegou (NF, cada uma 1x) × utilizado real (perfuração)
  const wb=concDia();const cd=Object.keys(wb).sort().filter(d=>d<=today).slice(-14);
  const mc=Math.max(0.1,...cd.map(d=>Math.max(wb[d].cheg||0,wb[d].util||0)));
- $('#byconc').innerHTML=cd.length?cd.map(d=>{const o=wb[d];const cheg=o.cheg,util=o.util;const pct=util?Math.max(0,Math.round((cheg-util)/util*100)):0;const hasC=!!(perdaState[d]&&perdaState[d].trim());
-   const pl=`<button class="jbtn ${hasC?'has':''}" data-day="${d}" style="padding:1px 5px;font-size:10.5px;margin-top:2px;color:var(--crit)">🔴${pct}% ${hasC?'📝':'✍️'}</button>`;
+ const totCheg=Object.values(wb).reduce((s,o)=>s+(o.cheg||0),0),totUtil=Object.values(wb).reduce((s,o)=>s+(o.util||0),0);
+ $('#conc-tot').innerHTML=`<div class="kc" style="flex:1"><div class="v num">${totCheg.toFixed(1)} m³</div><div class="l">Total chegou (NF)</div></div><div class="kc" style="flex:1"><div class="v num" style="color:var(--ok)">${totUtil.toFixed(1)} m³</div><div class="l">Total utilizado real</div></div>`;
+ $('#byconc').innerHTML=cd.length?cd.map(d=>{const o=wb[d];const cheg=o.cheg,util=o.util;const pct=util?Math.max(0,Math.round((cheg-util)/util*100)):0;const hasC=!!(perdaState[d]&&perdaState[d].trim());const zero=pct===0;const col=zero?'#1f6fe0':'var(--crit)';const dot=zero?'🔵':'🔴';
+   const pl=`<button class="jbtn ${hasC?'has':''}" data-day="${d}" style="padding:1px 5px;font-size:10.5px;margin-top:2px;color:${col}">${dot}${pct}% ${hasC?'📝':'✍️'}</button>`;
    return `<div class="colw"><div class="vlab" title="chegou ${cheg.toFixed(1)} / utilizado real ${util.toFixed(1)} m³">${cheg.toFixed(0)}/${util.toFixed(0)}</div><div class="st"><i style="height:${cheg/mc*100}%;background:var(--brand)"></i><i style="height:${util/mc*100}%;background:var(--ok)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div>${pl}</div>`;}).join(''):`<div style="color:var(--muted);font-size:13px;padding:6px 2px">Sem concreto lançado.</div>`;
 }
 function wasteByDay(){const m={};for(const k in state){const s=state[k];if(s.st!=='Executada'||!s.data)continue;const used=volUtil(s);if(!used)continue;const p=PILES.find(x=>x.k===k);if(!p)continue;const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c);if(!m[s.data])m[s.data]={teor:0,used:0};m[s.data].teor+=teor;m[s.data].used+=used;}return m;}
