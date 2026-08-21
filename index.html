@@ -213,10 +213,10 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
       <div class="card"><h3>Avanço por prédio / frente</h3><div id="byfrente"></div></div>
       <div class="card"><h3>Estacas por dia <small>· prev × real</small></h3><div class="cols" id="byday"></div>
         <div class="leg"><span><i style="background:#C9CCE0"></i>Previsto</span><span><i style="background:var(--brand)"></i>Realizado</span></div></div>
-      <div class="card" id="card-conc"><h3>Concreto por dia <small>· chegou (NF) × utilizado (teórico) = desperdício</small></h3>
+      <div class="card" id="card-conc"><h3>Concreto por dia <small>· chegou (NF) × utilizado real (perfuração)</small></h3>
         <div class="cols cols-tall" id="byconc"></div>
         <div class="leg"><span><i style="background:var(--brand)"></i>Chegou (NF/BT)</span><span><i style="background:var(--ok)"></i>Utilizado real</span></div>
-        <p style="color:var(--muted);font-size:12px;margin:8px 2px 0">Barra azul = concreto que <b>chegou</b> (BTs/NF); verde = <b>utilizado</b> nas estacas (real). A diferença é o <b>desperdício</b> (% abaixo). 🔴 acima de 30% · toque no ✍️/📝 para justificar.</p></div>
+        <p style="color:var(--muted);font-size:12px;margin:8px 2px 0">Barra azul = concreto que <b>chegou</b> (cada NF contada uma vez, sem repetir); verde = <b>utilizado real</b> nas estacas (perfuração = projeto + 0,5 m).</p></div>
     </section>
     <!-- MAPA -->
     <section class="view" id="v-mapa">
@@ -454,12 +454,11 @@ function dash(){
  // por dia (prev x real) — só dias até hoje
  const past=days.filter(d=>d<=today);const dd=past.slice(-14);const mx=Math.max(1,...dd.map(d=>Math.max(pbd[d]||0,rbd[d]||0)));
  $('#byday').innerHTML=dd.map(d=>`<div class="colw"><div class="vlab">${rbd[d]||''}</div><div class="st"><i style="height:${(pbd[d]||0)/mx*100}%;background:#C9CCE0"></i><i style="height:${(rbd[d]||0)/mx*100}%;background:var(--brand)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`).join('');
- // concreto por dia — chegou (betoneiras reais) × utilizado (real) → desperdício
+ // concreto por dia — chegou (NF, cada uma 1x) × utilizado real (perfuração)
  const wb=concDia();const cd=Object.keys(wb).sort().filter(d=>d<=today).slice(-14);
- const mc=Math.max(0.1,...cd.map(d=>wb[d].cheg||0));
- $('#byconc').innerHTML=cd.length?cd.map(d=>{const o=wb[d];const cheg=o.cheg,util=o.util;const perda=cheg-util;const pct=util?Math.round(perda/util*100):0;const red=util&&perda/util>0.30;const hasC=!!(perdaState[d]&&perdaState[d].trim());
-   const pl=red?`<button class="jbtn ${hasC?'has':''}" data-day="${d}" style="padding:1px 5px;font-size:10.5px;margin-top:2px">🔴${pct}% ${hasC?'📝':'✍️'}</button>`:`<div class="vlab" style="min-height:12px;color:#1f6fe0;font-weight:800">👍🔵${pct}%</div>`;
-   return `<div class="colw"><div class="vlab" title="chegou ${cheg.toFixed(1)} / utilizado ${util.toFixed(1)} m³">${cheg.toFixed(0)}/${util.toFixed(0)}</div><div class="st"><i style="height:${cheg/mc*100}%;background:var(--brand)"></i><i style="height:${util/mc*100}%;background:var(--ok)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div>${pl}</div>`;}).join(''):`<div style="color:var(--muted);font-size:13px;padding:6px 2px">Sem concreto lançado.</div>`;
+ const mc=Math.max(0.1,...cd.map(d=>Math.max(wb[d].cheg||0,wb[d].util||0)));
+ $('#byconc').innerHTML=cd.length?cd.map(d=>{const o=wb[d];const cheg=o.cheg,util=o.util;
+   return `<div class="colw"><div class="vlab" title="chegou ${cheg.toFixed(1)} / utilizado real ${util.toFixed(1)} m³">${cheg.toFixed(0)}/${util.toFixed(0)}</div><div class="st"><i style="height:${cheg/mc*100}%;background:var(--brand)"></i><i style="height:${util/mc*100}%;background:var(--ok)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`;}).join(''):`<div style="color:var(--muted);font-size:13px;padding:6px 2px">Sem concreto lançado.</div>`;
 }
 function wasteByDay(){const m={};for(const k in state){const s=state[k];if(s.st!=='Executada'||!s.data)continue;const used=volUtil(s);if(!used)continue;const p=PILES.find(x=>x.k===k);if(!p)continue;const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c);if(!m[s.data])m[s.data]={teor:0,used:0};m[s.data].teor+=teor;m[s.data].used+=used;}return m;}
 function concDia(){const m={};
@@ -616,8 +615,8 @@ async function waResumo(){
  if(ef){efBlk=`\n👷 Encarregado: ${ef.lider||'—'}`;
   if(ef.eq&&ef.eq.length){efBlk+=`\n👥 Equipe do dia (${ef.eq.length}):\n`+ef.eq.map(x=>`• ${x.n}${x.f?' — '+x.f:''}${x.t?' ('+(x.e||'terceiro')+')':''}`).join('\n');}}
  const cdd=concDia()[day];let concBlk='';
- if(cdd){const cheg=cdd.cheg,util=cdd.util,perda=cheg-util,pct=util?Math.round(perda/util*100):0;
-  concBlk=`\n\n🧱 Concreto do dia:\n• Chegou: ${nBR(cheg)} m³\n• Utilizado: ${nBR(util)} m³\n• Desperdício: ${nBR(perda)} m³ (${pct}%) ${pct>30?'🔴':'👍'}`;}
+ if(cdd){const cheg=cdd.cheg,util=cdd.util;
+  concBlk=`\n\n🧱 Concreto do dia:\n• Chegou (NF): ${nBR(cheg)} m³\n• Utilizado real: ${nBR(util)} m³`;}
  const head=`🏗️ ESTACAS HÉLICE — Legacy / Nestlé Araras\n📅 ${fmtBR(day)}\n✅ Executadas: ${list.length}`;
  const body=list.length?'\n\n'+lines.join('\n'):'\n\n(nenhuma estaca executada nesta data)';
  const foot=`${concBlk}${efBlk}\n📝 Apontador: ${user?user.name:''}`;
