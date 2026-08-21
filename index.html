@@ -431,6 +431,8 @@ const PLAN_START='2026-08-10', PLAN_RATE=16;  // previsto: 16/dia (seg–sex) a 
 function prevByDay(){const m={};const total=PILES.length;let acc=0;let d=new Date(PLAN_START+'T12:00:00');
  let guard=0;while(acc<total&&guard++<400){const dow=d.getDay();if(dow!==0&&dow!==6){const add=Math.min(PLAN_RATE,total-acc);m[ymd(d)]=add;acc+=add;}d.setDate(d.getDate()+1);}return m;}
 function TODAY(){return new Date().toISOString().slice(0,10);}
+// início da semana passada (segunda-feira) — gráficos mostram só semana atual + passada
+function weekCut(){const d=new Date(TODAY()+'T12:00:00');const mon=(d.getDay()+6)%7;d.setDate(d.getDate()-mon-7);return ymd(d);}
 function realByDay(){const m={};for(const id in state){const s=state[id];if(s.st==='Executada'&&s.data)m[s.data]=(m[s.data]||0)+1;}return m;}
 function concByDay(){const m={};for(const id in state){const s=state[id];const v=volUtil(s);if(s.st==='Executada'&&s.data&&v)m[s.data]=(m[s.data]||0)+v;}return m;}
 function allDays(){const set=new Set([...Object.keys(prevByDay()),...Object.keys(realByDay())]);return [...set].sort();}
@@ -457,10 +459,10 @@ function dash(){
  const cnt={},re={};PILES.forEach(p=>{cnt[p.fr]=(cnt[p.fr]||0)+1;if(isExec(p.k))re[p.fr]=(re[p.fr]||0)+1;});
  $('#byfrente').innerHTML=FRENTES.map(f=>{const t=cnt[f],r=re[f]||0,pc=Math.round(r/t*100);return `<div class="bar"><div class="nm">${f}</div><div class="tr"><i style="width:${pc}%"></i></div><div class="vv">${r}/${t}</div></div>`;}).join('');
  // por dia (prev x real) — só dias até hoje
- const past=days.filter(d=>d<=today);const dd=past.slice(-14);const mx=Math.max(1,...dd.map(d=>Math.max(pbd[d]||0,rbd[d]||0)));
+ const cut=weekCut();const dd=days.filter(d=>d>=cut&&d<=today);const mx=Math.max(1,...dd.map(d=>Math.max(pbd[d]||0,rbd[d]||0)));
  $('#byday').innerHTML=dd.map(d=>`<div class="colw"><div class="vlab">${rbd[d]||''}</div><div class="st"><i style="height:${(pbd[d]||0)/mx*100}%;background:#C9CCE0"></i><i style="height:${(rbd[d]||0)/mx*100}%;background:var(--brand)"></i></div><div class="x">${d.slice(8)}/${d.slice(5,7)}</div></div>`).join('');
  // concreto por dia — chegou (NF, cada uma 1x) × utilizado real (perfuração)
- const wb=concDia();const cd=Object.keys(wb).sort().filter(d=>d<=today).slice(-14);
+ const wb=concDia();const cd=Object.keys(wb).sort().filter(d=>d>=weekCut()&&d<=today);
  const mc=Math.max(0.1,...cd.map(d=>Math.max(wb[d].cheg||0,wb[d].util||0)));
  const totCheg=Object.values(wb).reduce((s,o)=>s+(o.cheg||0),0),totUtil=Object.values(wb).reduce((s,o)=>s+(o.util||0),0);
  $('#conc-tot').innerHTML=`<div class="kc" style="flex:1"><div class="v num">${totCheg.toFixed(1)} m³</div><div class="l">Total chegou (NF)</div></div><div class="kc" style="flex:1"><div class="v num" style="color:var(--ok)">${totUtil.toFixed(1)} m³</div><div class="l">Total utilizado real</div></div>`;
