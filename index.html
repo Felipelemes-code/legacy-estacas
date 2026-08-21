@@ -216,7 +216,7 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
       <div class="card" id="card-conc"><h3>Concreto por dia <small>· chegou (NF) × utilizado real (perfuração)</small></h3>
         <div class="cols cols-tall" id="byconc"></div>
         <div class="leg"><span><i style="background:var(--brand)"></i>Chegou (NF/BT)</span><span><i style="background:var(--ok)"></i>Utilizado real</span></div>
-        <p style="color:var(--muted);font-size:12px;margin:8px 2px 0">Barra azul = concreto que <b>chegou</b> (cada NF contada uma vez, sem repetir); verde = <b>utilizado real</b> nas estacas (perfuração = projeto + 0,5 m).</p></div>
+        <p style="color:var(--muted);font-size:12px;margin:8px 2px 0">Barra azul = concreto que <b>chegou</b> (cada NF contada uma vez, sem repetir); verde = <b>utilizado real</b> nas estacas (projeto + 0,5 m de perfuração, com +30% de consumo).</p></div>
     </section>
     <!-- MAPA -->
     <section class="view" id="v-mapa">
@@ -326,6 +326,7 @@ let btState={};    // {NF: {entregue}}
 let perdaState={}; // {data: comentario/justificativa da perda}
 // concreto ENTREGUE por dia (betoneiras reais × volume) — informado pela obra
 const CONC_ENTREGUE={'2026-08-05':21,'2026-08-06':36,'2026-08-07':14,'2026-08-10':14,'2026-08-11':45,'2026-08-12':64,'2026-08-13':42,'2026-08-18':49};
+const VOL_FACT=1.30; // utilizado real = volume da perfuração + 30% (alargamento do furo)
 let user=JSON.parse(localStorage.getItem(UKEY)||'null');
 let curFr='',curStatus='',curId=null,limit=40,lgRole='apontador';
 async function loadAll(){
@@ -406,7 +407,7 @@ function openSheet(k){curId=k;const p=PILES.find(x=>x.k===k);const s=state[k]||{
  mcalc();$('#ov').classList.add('on');}
 function mcalc(){const p=PILES.find(x=>x.k===curId);const comp=parseFloat($('#m-comp').value)||p.c;
  const teorProj=Math.PI*Math.pow(p.d/2000,2)*p.c;      // teórico do projeto
- const util=Math.PI*Math.pow(p.d/2000,2)*comp;          // volume utilizado = teórico do comprimento executado
+ const util=Math.PI*Math.pow(p.d/2000,2)*comp*VOL_FACT; // volume utilizado real = perfuração + 30%
  $('#m-teor').textContent=teorProj.toFixed(2)+' m³';
  $('#m-cons').textContent=util.toFixed(2)+' m³';
  const dl=comp-p.c;const el=$('#m-sit');
@@ -464,7 +465,7 @@ function dash(){
 function wasteByDay(){const m={};for(const k in state){const s=state[k];if(s.st!=='Executada'||!s.data)continue;const used=volUtil(s);if(!used)continue;const p=PILES.find(x=>x.k===k);if(!p)continue;const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c);if(!m[s.data])m[s.data]={teor:0,used:0};m[s.data].teor+=teor;m[s.data].used+=used;}return m;}
 function concDia(){const m={};
  for(const k in state){const s=state[k];if(s.st!=='Executada'||!s.data)continue;const p=PILES.find(x=>x.k===k);if(!p)continue;
-  const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c);
+  const teor=Math.PI*Math.pow(p.d/2000,2)*((s.comp)||p.c)*VOL_FACT;
   if(!m[s.data])m[s.data]={util:0,nf:{}};m[s.data].util+=teor;
   if(s.nf1&&s.vol1)m[s.data].nf[s.nf1]=s.vol1;   // volume por NF (cada NF conta 1x, não acumula)
   if(s.nf2&&s.vol2)m[s.data].nf[s.nf2]=s.vol2;}
