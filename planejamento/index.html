@@ -154,6 +154,7 @@ function start(){
 
 // ---- HUB ----
 const MODS=[
+  ['ext:../','Estacas Hélice','<path d="M12 2v20M6 7l6-5 6 5M8 12l4-3 4 3M9 17l3-2 3 2"/>',0],
   ['painel','Painel','<path d="M3 3v18h18"/><path d="M7 13l3-3 3 3 5-6"/>',0],
   ['plan','Cronograma','<path d="M4 6h16M4 12h16M4 18h10"/>',0],
   ['pcp','Programação','<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',0],
@@ -166,6 +167,7 @@ function buildHub(){
   $('#hub').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.go));
 }
 function go(v){
+  if(v.startsWith('ext:')){window.location.href=v.slice(4);return;}
   if(v.startsWith('soon:')){openSoon(v.slice(5));return;}
   setNav(v);
 }
