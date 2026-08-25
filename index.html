@@ -219,6 +219,14 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
         <div class="leg"><span><i style="background:var(--brand)"></i>Chegou (NF/BT)</span><span><i style="background:var(--ok)"></i>Utilizado real</span></div>
         <p style="color:var(--muted);font-size:12px;margin:8px 2px 0">Barra azul = concreto que <b>chegou</b> (cada NF contada uma vez, sem repetir); verde = <b>utilizado real</b> nas estacas (projeto + 0,5 m de perfuração, com +30% de consumo).</p></div>
     </section>
+    <!-- CONSULTA POR DIA -->
+    <section class="view" id="v-consulta">
+      <div class="card">
+        <h3>Consulta por dia <small>· o que foi feito na data</small></h3>
+        <div class="fld" style="margin-top:8px"><label>Selecione o dia</label><input type="date" class="inp" id="cs-date"></div>
+      </div>
+      <div id="cs-out"></div>
+    </section>
     <!-- MAPA -->
     <section class="view" id="v-mapa">
       <div class="card" style="margin-bottom:10px">
@@ -275,6 +283,7 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
   <div class="nav" id="nav">
     <button data-v="est" class="on"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Estacas</button>
     <button data-v="dash"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 13l3-3 3 3 5-6"/></svg>Painel</button>
+    <button data-v="consulta"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Consulta</button>
     <button data-v="mapa"><svg viewBox="0 0 24 24"><path d="M9 20l-5.5 2V6L9 4m0 16l6-2m-6 2V4m6 14l5.5 2V6L15 4m0 14V4m0 0L9 4"/></svg>Mapa</button>
     <button data-v="efet"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Efetivo</button>
     <button data-v="exp"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 10l5 5 5-5M5 21h14"/></svg>Exportar</button>
@@ -369,7 +378,7 @@ function startApp(){$('#login').classList.add('hidden');$('#appwrap').classList.
  $('#hd-user').textContent=user.name.split(' ')[0]+' · '+({apontador:'Apont.',gestao:'Gestão',admin:'Admin',cliente:'Cliente'}[user.role]);
  $('#hd-date').textContent='📅 '+fmtBR(TODAY());
  const cli=user.role==='cliente';   // cliente: só Painel e Mapa, sem editar/extrair
- ['est','efet','exp'].forEach(v=>{const b=$('#nav button[data-v="'+v+'"]');if(b)b.style.display=cli?'none':'';});
+ ['est','efet','exp','consulta'].forEach(v=>{const b=$('#nav button[data-v="'+v+'"]');if(b)b.style.display=cli?'none':'';});
  const md=$('#map-dl');if(md)md.style.display=cli?'none':'';
  const cc=$('#card-conc');if(cc)cc.style.display=cli?'none':'';   // cliente não vê concreto/dia (em ajuste)
  chips();render();dash();expSum();setSync(sbOn()?'ok':'err');
@@ -380,7 +389,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();
 setInterval(()=>{if(!document.hidden&&!$('#ov').classList.contains('on'))refresh();},8000);
 
 // NAV
-$('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$$('#nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');const v=b.dataset.v;$$('.view').forEach(x=>x.classList.remove('on'));$('#v-'+v).classList.add('on');if(v==='dash')dash();if(v==='efet')efetRender();if(v==='mapa')mapRender();});
+$('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$$('#nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');const v=b.dataset.v;$$('.view').forEach(x=>x.classList.remove('on'));$('#v-'+v).classList.add('on');if(v==='dash')dash();if(v==='efet')efetRender();if(v==='mapa')mapRender();if(v==='consulta')consultaRender();});
 $('#theme').onclick=()=>{const c=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',c==='dark'?'light':'dark');dash();};
 
 // ESTACAS
@@ -631,6 +640,24 @@ async function waResumo(){
  const body=list.length?'\n\n'+lines.join('\n'):'\n\n(nenhuma estaca executada nesta data)';
  const foot=`${concBlk}${efBlk}\n📝 Apontador: ${user?user.name:''}`;
  return head+body+foot;}
+// CONSULTA POR DIA
+async function consultaRender(){
+ const el=$('#cs-date');if(!el)return;if(!el.value)el.value=TODAY();
+ const day=el.value;
+ const list=PILES.filter(p=>{const s=state[p.k];return s&&s.st==='Executada'&&s.data===day;}).sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true}));
+ const cdd=concDia()[day]||{cheg:0,util:0,nf:{}};
+ const nfs=Object.keys(cdd.nf||{});
+ const ef=await efInfo(day);
+ const tile=(v,l,c)=>`<div class="kc" style="flex:1;min-width:108px"><div class="v num"${c?` style="color:${c}"`:''}>${v}</div><div class="l">${l}</div></div>`;
+ const kpis=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 12px">${tile(list.length,'Estacas executadas')}${tile(nBR(cdd.cheg||0)+' m³','Chegou (NF)','var(--brand)')}${tile(nBR(cdd.util||0)+' m³','Utilizado real','var(--ok)')}${tile(ef?ef.n:'—','Equipe (MOD)')}</div>`;
+ let estBlk;
+ if(list.length){estBlk=list.map(p=>{const s=state[p.k];const bp=[s.bloco&&('Bloco '+s.bloco),s.pilar&&('Pilar '+s.pilar)].filter(Boolean).join(' · ');const bt=[s.bt1,s.bt2].filter(Boolean).join('+');const nf=[s.nf1,s.nf2].filter(Boolean).join(', ');const hora=(s.ini||s.fim)?`⏱ ${s.ini||'—'}→${s.fim||'—'}`:'';const v=volUtil(s);
+   return `<div style="border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin:6px 0"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${p.id}</b><span style="color:var(--muted);font-size:12px">${p.fr} · Ø${p.d} · ${nBR((s.comp)||p.c)} m</span></div>${bp?`<div style="font-size:13px;margin-top:3px">${bp}</div>`:''}<div style="font-size:12.5px;color:var(--muted);margin-top:3px">${bt?'BT '+bt+' · ':''}${nf?'NF '+nf+' · ':''}${v?nBR(v)+' m³ ':''}${hora}</div>${s.ocor?`<div style="font-size:12.5px;color:var(--crit);margin-top:3px">📝 ${s.ocor}</div>`:''}</div>`;}).join('');}
+ else estBlk=`<div style="color:var(--muted);font-size:13px;padding:6px 2px">Nenhuma estaca executada nesta data.</div>`;
+ const nfBlk=nfs.length?`<div class="card"><h3>Notas fiscais do dia <small>· ${nBR(cdd.cheg||0)} m³ chegaram</small></h3>`+nfs.sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(nf=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 2px;border-bottom:1px solid var(--line)"><span>NF ${nf}</span><b>${nBR(cdd.nf[nf])} m³</b></div>`).join('')+`</div>`:'';
+ const efBlk=(ef&&ef.eq&&ef.eq.length)?`<div class="card"><h3>Equipe do dia <small>· líder ${ef.lider||'—'}</small></h3>`+ef.eq.map(x=>`<div style="font-size:13px;padding:3px 2px">• ${x.n}${x.f?' — '+x.f:''}${x.t?` <span style="color:var(--muted)">(${x.e||'terceiro'})</span>`:''}</div>`).join('')+`</div>`:'';
+ $('#cs-out').innerHTML=`<div class="card"><h3>${fmtBR(day)}</h3>${kpis}${estBlk}</div>${nfBlk}${efBlk}`;}
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='cs-date')consultaRender();});
 function initWA(){const el=$('#wa-date');if(el&&!el.value)el.value=new Date().toISOString().slice(0,10);}
 document.addEventListener('click',async e=>{if(e.target.closest&&e.target.closest('#btn-wa')){const txt=await waResumo();
  try{await navigator.clipboard.writeText(txt);toast('📋 Resumo copiado! Cole no WhatsApp');}
