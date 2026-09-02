@@ -245,7 +245,7 @@ function apontRender(){
   let grp='',html='';
   list.forEach(a=>{
     if(a.grupo&&a.grupo!==grp){grp=a.grupo;html+=`<div style="font-weight:700;font-size:12.5px;color:var(--brand);margin:12px 0 4px">${grp}</div>`;}
-    const st=(apState[apKey(apArea,a.item)]||{}).status||'aberto';const meta=a.dias[day];
+    const st=(apState[apKey(apArea,a.item)]||{}).status||'aberto';const meta=Math.round(a.dias[day]*10)/10;
     html+=`<div class="eaprow" data-item="${a.item}" style="cursor:pointer"><div class="t"><b>${a.item}</b> ${a.ativ}<div style="color:#94a3b8;font-size:11px">Meta do dia: <b>${meta}</b>${a.un?' '+a.un:''}</div></div><span class="apst ${st}">${st}</span></div>`;
   });
   $('#ap-list').innerHTML=html||`<p style="color:var(--mut);font-size:13px">Nenhuma atividade programada para ${fmtD(day)} nesta área.</p>`;
@@ -259,7 +259,7 @@ function openApont(item){
   $('#ap-pres').innerHTML=MODLIST.map(p=>`<span class="pchip" data-n="${p.n}">${p.n.split(' ')[0]} ${p.n.split(' ').slice(-1)[0]}</span>`).join('');
   $('#ap-pres').querySelectorAll('.pchip').forEach(c=>c.onclick=()=>{c.classList.toggle('on');updPCount();});
   $('#ap-un').textContent=a.un?'('+a.un+')':'';$('#ap-evs').innerHTML='';
-  const meta=a.dias&&a.dias[$('#ap-date').value];$('#ap-prod').placeholder=(meta!=null)?('meta do dia: '+meta+(a.un?' '+a.un:'')):'quantidade executada';
+  const meta=a.dias&&a.dias[$('#ap-date').value];$('#ap-prod').placeholder=(meta!=null)?('meta do dia: '+(Math.round(meta*10)/10)+(a.un?' '+a.un:'')):'quantidade executada';
   const ids=['ap-enc','ap-ini','ap-just','ap-prod','ap-as','ap-av','ap-fim','ap-equip','ap-prob','ap-causa','ap-sol'];
   ids.forEach(id=>$('#'+id).value='');$('#ap-restr').checked=false;
   const s=apState[apKey(apArea,item)];
