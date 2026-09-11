@@ -202,6 +202,21 @@ select.inp{appearance:none;-webkit-appearance:none}
       </div>
     </section>
 
+    <!-- CONSULTA / EXTRAÇÃO -->
+    <section class="view" id="v-consulta">
+      <div class="card"><h3>Consulta e Extração <small>· efetivo, chuva, eventos</small></h3>
+        <div id="cq-mode" style="margin:8px 0 6px">
+          <span class="chip on" data-m="dia">Dia</span><span class="chip" data-m="sem">Semana</span><span class="chip" data-m="mes">Mês</span><span class="chip" data-m="per">Período</span>
+        </div>
+        <div id="cq-fields"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn" id="cq-wa" style="flex:1;justify-content:center;background:#25D366;color:#08351d;border-color:#25D366;font-weight:800">WhatsApp</button>
+          <button class="btn" id="cq-csv" style="flex:1;justify-content:center">Baixar Excel/CSV</button>
+        </div>
+      </div>
+      <div id="cq-out"></div>
+    </section>
+
     <!-- STUBS -->
     <section class="view" id="v-soon">
       <div class="card" style="text-align:center;padding:40px 20px">
@@ -271,7 +286,7 @@ function start(){
   $('#login').classList.add('hide');$('#app').classList.remove('hide');
   $('#hd-status').textContent='Status: '+fmtD(DATA.status);
   $('#hd-user').textContent=user.role;
-  buildHub();painel();planInit();pcpInit();rhInit();apontInit();
+  buildHub();painel();planInit();pcpInit();rhInit();apontInit();consultaInit();
 }
 function TODAY(){return new Date().toISOString().slice(0,10);}
 
@@ -368,6 +383,83 @@ function waResumoPlan(){
   try{navigator.clipboard.writeText(txt).then(done,()=>{waFallback(txt);done();});}catch(e){waFallback(txt);done();}
 }
 function waFallback(txt){const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){prompt('Copie o resumo:',txt);}document.body.removeChild(ta);}
+function copyToClip(txt,btn,msg){const o=btn.innerHTML;const done=()=>{btn.textContent=msg;setTimeout(()=>btn.innerHTML=o,1800);};try{navigator.clipboard.writeText(txt).then(done,()=>{waFallback(txt);done();});}catch(e){waFallback(txt);done();}}
+
+// ---- CONSULTA / EXTRAÇÃO ----
+let cqMode='dia';
+function consultaInit(){
+  $('#cq-mode').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{cqMode=c.dataset.m;$('#cq-mode').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c));cqFields();consultaRender();});
+  $('#cq-wa').onclick=()=>copyToClip(cqResumoTxt(),$('#cq-wa'),'✓ Copiado!');
+  $('#cq-csv').onclick=cqDownloadCSV;
+  cqFields();consultaRender();
+}
+function cqFields(){
+  const t=DATA.pcpStatus||TODAY();let h='';
+  if(cqMode==='dia')h=`<label class="apl">Dia</label><input type="date" class="inp" id="cq-d" value="${t}">`;
+  else if(cqMode==='sem')h=`<label class="apl">Semana (qualquer dia dela)</label><input type="date" class="inp" id="cq-d" value="${t}">`;
+  else if(cqMode==='mes')h=`<label class="apl">Mês</label><input type="month" class="inp" id="cq-m" value="${t.slice(0,7)}">`;
+  else h=`<div style="display:flex;gap:8px"><div style="flex:1"><label class="apl">De</label><input type="date" class="inp" id="cq-d0" value="${t}"></div><div style="flex:1"><label class="apl">Até</label><input type="date" class="inp" id="cq-d1" value="${t}"></div></div>`;
+  $('#cq-fields').innerHTML=h;
+  $('#cq-fields').querySelectorAll('input').forEach(i=>i.addEventListener('change',consultaRender));
+}
+function cqRange(){
+  if(cqMode==='dia'){const d=$('#cq-d').value;return[d,d];}
+  if(cqMode==='sem'){const d=new Date($('#cq-d').value+'T12:00:00');const dow=(d.getDay()+6)%7;const mon=new Date(d);mon.setDate(d.getDate()-dow);const sat=new Date(mon);sat.setDate(mon.getDate()+5);const f=x=>x.toISOString().slice(0,10);return[f(mon),f(sat)];}
+  if(cqMode==='mes'){const m=$('#cq-m').value;const a=m.split('-').map(Number);const last=new Date(a[0],a[1],0).getDate();return[m+'-01',m+'-'+String(last).padStart(2,'0')];}
+  return[$('#cq-d0').value,$('#cq-d1').value];
+}
+function hrsBetween(a,b){if(!a||!b)return 0;const p=x=>{const s=x.split(':');return (+s[0])+(+s[1])/60;};const d=p(b)-p(a);return d>0?d:0;}
+function cqData(){
+  const rg=cqRange(),d0=rg[0],d1=rg[1];
+  const recs=Object.keys(apState).map(k=>apState[k]).filter(s=>s.data&&s.data>=d0&&s.data<=d1);
+  const setDia={},eventos=[];let restr=0,homemdia=0;
+  recs.forEach(s=>{
+    let pres=[];try{pres=JSON.parse(s.presenca_json||'[]');}catch(_){}
+    (setDia[s.data]=setDia[s.data]||new Set());pres.forEach(n=>setDia[s.data].add(n));
+    if(s.restricao)restr++;
+    let evs=[];try{evs=JSON.parse(s.eventos_json||'[]');}catch(_){}
+    evs.forEach(e=>eventos.push({data:s.data,area:s.area,tipo:e.tipo,ini:e.ini,fim:e.fim,obs:e.obs,h:hrsBetween(e.ini,e.fim)}));
+  });
+  const porDia={};Object.keys(setDia).forEach(d=>{porDia[d]=setDia[d].size;homemdia+=setDia[d].size;});
+  return {d0,d1,recs,porDia,eventos,restr,homemdia,atv:recs.length};
+}
+function consultaRender(){
+  if(!$('#cq-out'))return;const D=cqData();const dias=Object.keys(D.porDia).sort();
+  const med=dias.length?Math.round(D.homemdia/dias.length):0;
+  const evH=D.eventos.reduce((s,e)=>s+e.h,0);
+  const chuvaD=new Set(D.eventos.filter(e=>/chuva/i.test(e.tipo)).map(e=>e.data)).size;
+  const tile=(v,l,c)=>`<div class="kc" style="flex:1;min-width:92px"><div class="v"${c?` style="color:${c}"`:''}>${v}</div><div class="l">${l}</div></div>`;
+  const byTipo={};D.eventos.forEach(e=>{byTipo[e.tipo]=(byTipo[e.tipo]||0)+e.h;});
+  let out=`<div class="card"><h3>${fmtBR(D.d0)}${D.d1!==D.d0?' a '+fmtBR(D.d1):''} <small>· ${D.atv} apontamentos</small></h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+      ${tile(D.homemdia,'Homem-dia','var(--brand)')}${tile(med,'Média/dia')}${tile(nBR(evH,1)+'h','Eventos/perdas','var(--warn)')}${tile(chuvaD,'Dias c/ chuva')}${tile(D.restr,'Restrições','var(--crit)')}
+    </div>`;
+  if(dias.length){const mx=Math.max(1,...dias.map(d=>D.porDia[d]));
+    out+=`<div style="font-size:12px;font-weight:700;color:var(--mut);margin:6px 0 3px">Efetivo presente por dia</div>`+
+      dias.map(d=>`<div class="bar"><div class="nm">${fmtBR(d).slice(0,5)}</div><div class="tr"><i style="width:${D.porDia[d]/mx*100}%"></i></div><div class="vv">${D.porDia[d]}</div></div>`).join('');}
+  else out+=`<div style="color:var(--mut);font-size:13px">Sem apontamentos neste período.</div>`;
+  out+=`</div>`;
+  if(D.eventos.length){out+=`<div class="card"><h3>Eventos <small>· ${nBR(evH,1)}h</small></h3>`+
+    Object.entries(byTipo).sort((a,b)=>b[1]-a[1]).map(([t,h])=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 2px;border-bottom:1px solid var(--line)"><span>${t}</span><b>${nBR(h,1)}h</b></div>`).join('')+
+    `<div style="margin-top:6px">`+D.eventos.slice().sort((a,b)=>a.data<b.data?-1:1).map(e=>`<div style="font-size:12px;color:var(--mut);padding:2px 0">${fmtBR(e.data).slice(0,5)} · ${e.tipo}${e.ini?' '+e.ini+'→'+(e.fim||'—'):''}${e.obs?' — '+e.obs:''}</div>`).join('')+`</div></div>`;}
+  $('#cq-out').innerHTML=out;
+}
+function cqResumoTxt(){
+  const D=cqData();const dias=Object.keys(D.porDia).sort();const med=dias.length?Math.round(D.homemdia/dias.length):0;
+  const evH=D.eventos.reduce((s,e)=>s+e.h,0);const chuvaD=new Set(D.eventos.filter(e=>/chuva/i.test(e.tipo)).map(e=>e.data)).size;
+  let t='📊 CONSULTA — Legacy / Nestlé\n📅 '+fmtBR(D.d0)+(D.d1!==D.d0?' a '+fmtBR(D.d1):'');
+  t+='\n\n👷 Homem-dia: '+D.homemdia+'\n📈 Média/dia: '+med+'\n⏱ Eventos/perdas: '+nBR(evH,1)+'h\n🌧 Dias com chuva: '+chuvaD+'\n🚧 Restrições: '+D.restr;
+  if(dias.length){t+='\n\nEfetivo por dia:';dias.forEach(d=>t+='\n• '+fmtBR(d).slice(0,5)+': '+D.porDia[d]);}
+  return t;
+}
+function cqDownloadCSV(){
+  const D=cqData();const rows=[['Data','Efetivo presente']];
+  Object.keys(D.porDia).sort().forEach(d=>rows.push([d,D.porDia[d]]));
+  rows.push([]);rows.push(['Data','Área','Evento','Início','Fim','Horas','Obs']);
+  D.eventos.forEach(e=>rows.push([e.data,e.area,e.tipo,e.ini,e.fim,e.h.toFixed(1),(e.obs||'').replace(/;/g,',')]));
+  const csv='﻿'+rows.map(r=>r.join(';')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='consulta_'+D.d0+'_'+D.d1+'.csv';document.body.appendChild(a);a.click();a.remove();
+}
 function closeApont(){$('#ap-ov').style.display='none';$('#ap-sheet').style.display='none';}
 function addEvento(ev){
   ev=ev||{tipo:'Paralização',ini:'',fim:'',obs:''};
@@ -432,6 +524,7 @@ const MODS=[
   ['pcp','Programação','<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',0],
   ['apont','Apontamento','<path d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>',0],
   ['rh','RH · Efetivo','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>',0],
+  ['consulta','Consulta','<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',0],
   ['soon:RDO','RDO','<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/>',1],
 ];
 function buildHub(){
@@ -443,6 +536,7 @@ function go(v){
   if(v.startsWith('soon:')){openSoon(v.slice(5));return;}
   if(v==='rh')rhRender();
   if(v==='apont')apontRender();
+  if(v==='consulta')consultaRender();
   setNav(v);
 }
 function setNav(v){
