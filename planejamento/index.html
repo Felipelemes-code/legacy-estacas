@@ -82,6 +82,19 @@ select.inp{appearance:none;-webkit-appearance:none}
 .pchip.on{background:var(--brand);color:#fff;border-color:var(--brand)}
 .apst{font-size:10px;font-weight:800;padding:2px 7px;border-radius:10px}
 .apst.aberto{background:#eef1f6;color:var(--mut)}.apst.rascunho{background:var(--brand2);color:var(--brand)}.apst.fechado{background:var(--okbg);color:var(--ok)}
+.apcard{border:1px solid var(--line);border-left:5px solid #cbd5e1;border-radius:11px;padding:11px 13px;margin:9px 0;cursor:pointer;background:#fff;transition:background .1s}
+.apcard:active{background:#f6f9fc}
+.apcard.st-rascunho{border-left-color:var(--brand)}.apcard.st-fechado{border-left-color:var(--ok)}
+.apc-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.apc-item{font-weight:800;color:#1f3a5f;font-size:12px;background:#eef2f8;padding:2px 8px;border-radius:6px}
+.apc-ativ{font-size:14px;font-weight:600;margin:6px 0 6px;line-height:1.25}
+.apc-meta{font-size:12.5px;color:var(--mut);display:flex;align-items:center;gap:5px}
+.apc-meta b{color:#1f3a5f;font-size:14px}
+.grpbar{font-weight:800;font-size:11px;color:#fff;background:#1f3a5f;padding:5px 10px;border-radius:7px;margin:14px 0 2px;text-transform:uppercase;letter-spacing:.3px}
+.fslot{width:82px;height:82px;border:1.5px dashed #cbd5e1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--mut);cursor:pointer;font-size:11px;gap:2px}
+.fthumb{position:relative;width:82px;height:82px}
+.fthumb img{width:82px;height:82px;object-fit:cover;border-radius:10px}
+.fthumb button{position:absolute;top:-7px;right:-7px;background:var(--crit);color:#fff;border:0;border-radius:50%;width:22px;height:22px;font-size:14px;line-height:1;cursor:pointer}
 </style>
 
 <!-- LOGIN -->
@@ -254,6 +267,8 @@ select.inp{appearance:none;-webkit-appearance:none}
     <div id="ap-evs"></div>
     <button class="btn" id="ap-addev" style="margin-top:6px">+ Evento (paralização, chuva, SSMA…)</button>
     <label class="apl">Equipamentos utilizados</label><input class="inp" id="ap-equip" placeholder="ex.: perfuratriz, retroescavadeira…">
+    <label class="apl">Fotos da atividade <small style="color:var(--mut)">(até 3)</small></label>
+    <div id="ap-fotos" style="display:flex;gap:10px;flex-wrap:wrap"></div>
     <label class="apl">Problema / causa / solução <small style="color:var(--mut)">(se produção abaixo do previsto)</small></label>
     <textarea class="inp" id="ap-prob" rows="2" placeholder="Problema"></textarea>
     <textarea class="inp" id="ap-causa" rows="2" placeholder="Causa" style="margin-top:6px"></textarea>
@@ -301,7 +316,7 @@ async function apontInit(){
   el.addEventListener('change',apontRender);
   $('#ap-areas').innerHTML=PCPMAP.map(m=>`<span class="chip" data-a="${m[0]}">${m[1]}</span>`).join('');
   $('#ap-areas').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{apArea=c.dataset.a;apontRender();});
-  const rows=await sbSel('apont?select=*');apState={};(rows||[]).forEach(r=>apState[r.k]=r);
+  const rows=await sbSel('apont?select=k,data,area,grupo,atividade,item,encarregado,hora_ini,justif,almoco_sai,almoco_volta,hora_fim,producao,un,eventos_json,presenca_json,equip,problema,causa,solucao,restricao,status');apState={};(rows||[]).forEach(r=>apState[r.k]=r);
   apontRender();
   $('#ap-close').onclick=closeApont;$('#ap-ov').onclick=closeApont;
   $('#ap-ini').addEventListener('change',()=>{$('#ap-jbox').style.display=($('#ap-ini').value&&$('#ap-ini').value>'07:45')?'block':'none';});
@@ -318,9 +333,9 @@ function apontRender(){
   const list=(DATA.pcp[apArea]||[]).filter(a=>a.dias&&a.dias[day]!=null);
   let grp='',html='';
   list.forEach(a=>{
-    if(a.grupo&&a.grupo!==grp){grp=a.grupo;html+=`<div style="font-weight:700;font-size:12.5px;color:var(--brand);margin:12px 0 4px">${grp}</div>`;}
+    if(a.grupo&&a.grupo!==grp){grp=a.grupo;html+=`<div class="grpbar">${grp}</div>`;}
     const st=(apState[apKey(apArea,a.item)]||{}).status||'aberto';const meta=Math.round(a.dias[day]*10)/10;
-    html+=`<div class="eaprow" data-item="${a.item}" style="cursor:pointer"><div class="t"><b>${a.item}</b> ${a.ativ}<div style="color:#94a3b8;font-size:11px">Meta do dia: <b>${meta}</b>${a.un?' '+a.un:''}</div></div><span class="apst ${st}">${st}</span></div>`;
+    html+=`<div class="apcard st-${st}" data-item="${a.item}"><div class="apc-top"><span class="apc-item">${a.item}</span><span class="apst ${st}">${st}</span></div><div class="apc-ativ">${a.ativ}</div><div class="apc-meta">🎯 Meta do dia: <b>${meta}</b> ${a.un||''}</div></div>`;
   });
   $('#ap-list').innerHTML=html||`<p style="color:var(--mut);font-size:13px">Nenhuma atividade programada para ${fmtD(day)} nesta área.</p>`;
   $('#ap-list').querySelectorAll('[data-item]').forEach(r=>r.onclick=()=>openApont(r.dataset.item));
@@ -346,6 +361,7 @@ function openApont(item){
   }
   $('#ap-jbox').style.display=($('#ap-ini').value>'07:45')?'block':'none';
   updPCount();$('#ap-msg').textContent='';
+  apFotos=[null,null,null];renderFotos();loadFotos(apKey(apArea,item));
   $('#ap-ov').style.display='block';$('#ap-sheet').style.display='block';
 }
 function updPCount(){const n=$('#ap-pres').querySelectorAll('.pchip.on').length;$('#ap-pcount').textContent=n?`— ${n} presentes`:'';}
@@ -384,6 +400,17 @@ function waResumoPlan(){
 }
 function waFallback(txt){const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){prompt('Copie o resumo:',txt);}document.body.removeChild(ta);}
 function copyToClip(txt,btn,msg){const o=btn.innerHTML;const done=()=>{btn.textContent=msg;setTimeout(()=>btn.innerHTML=o,1800);};try{navigator.clipboard.writeText(txt).then(done,()=>{waFallback(txt);done();});}catch(e){waFallback(txt);done();}}
+
+// ---- FOTOS ----
+let apFotos=[null,null,null];
+function compressImg(file,cb){const r=new FileReader();r.onload=e=>{const img=new Image();img.onload=()=>{const max=1000;let w=img.width,h=img.height;if(w>h&&w>max){h=Math.round(h*max/w);w=max;}else if(h>=w&&h>max){w=Math.round(w*max/h);h=max;}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);cb(c.toDataURL('image/jpeg',0.6));};img.src=e.target.result;};r.readAsDataURL(file);}
+function renderFotos(){
+  const el=$('#ap-fotos');if(!el)return;
+  el.innerHTML=apFotos.map((f,i)=>f?`<div class="fthumb"><img src="${f}"><button type="button" data-rm="${i}">×</button></div>`:`<label class="fslot">📷<span>Foto ${i+1}</span><input type="file" accept="image/*" capture="environment" data-slot="${i}" style="display:none"></label>`).join('');
+  el.querySelectorAll('input[type=file]').forEach(inp=>inp.onchange=e=>{const f=e.target.files&&e.target.files[0];if(f)compressImg(f,d=>{apFotos[+inp.dataset.slot]=d;renderFotos();});});
+  el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{apFotos[+b.dataset.rm]=null;renderFotos();});
+}
+async function loadFotos(k){try{const r=await fetch(SB_URL+'/rest/v1/apont?k=eq.'+encodeURIComponent(k)+'&select=foto1,foto2,foto3',{headers:sbH});const a=await r.json();if(a&&a[0]){apFotos=[a[0].foto1||null,a[0].foto2||null,a[0].foto3||null];renderFotos();}}catch(_){}}
 
 // ---- CONSULTA / EXTRAÇÃO ----
 let cqMode='dia';
@@ -479,7 +506,8 @@ async function saveApont(status){
     producao:parseFloat($('#ap-prod').value)||null,un:apCur.un||'',
     eventos_json:JSON.stringify(gatherEv()),presenca_json:JSON.stringify(pres),equip:$('#ap-equip').value,
     problema:$('#ap-prob').value,causa:$('#ap-causa').value,solucao:$('#ap-sol').value,
-    restricao:$('#ap-restr').checked,status:status,updated_by:user.role};
+    restricao:$('#ap-restr').checked,status:status,updated_by:user.role,
+    foto1:apFotos[0],foto2:apFotos[1],foto3:apFotos[2]};
   $('#ap-msg').textContent='Salvando…';
   try{await sbUp('apont',row);apState[k]=row;$('#ap-msg').textContent='✓ Salvo';apontRender();setTimeout(closeApont,600);}
   catch(e){$('#ap-msg').textContent='⚠ Falha — rodou o SQL da tabela apont?';}
