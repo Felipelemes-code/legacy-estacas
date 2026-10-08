@@ -141,7 +141,7 @@ select.inp{appearance:none;-webkit-appearance:none}
   <div class="wrap">
 
     <!-- HOME -->
-    <section class="view on" id="v-home">
+    <section class="view" id="v-home">
       <div class="card"><h3>Bem-vindo ao controle da obra 219</h3>
         <p style="color:var(--mut);font-size:13px;margin:6px 0 0">Escolha um módulo abaixo.</p>
         <div class="hub" id="hub"></div>
@@ -149,57 +149,12 @@ select.inp{appearance:none;-webkit-appearance:none}
     </section>
 
     <!-- PAINEL (DASHBOARD) -->
-    <section class="view" id="v-painel">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 2px 2px"><div style="font-size:18px;font-weight:800">Painel da Obra 219</div><div style="font-size:11px;color:var(--mut);text-align:right" id="pn-status"></div></div>
-      <div class="statrow" id="pn-stats"></div>
-
-      <div class="card"><h3>Curva de Avanço <small>· previsto LB1 × realizado × tendência</small></h3>
-        <div id="curve" style="margin-top:6px"></div>
-        <div class="lgd"><span><i style="background:var(--brand)"></i>Previsto sem.</span><span><i style="background:var(--brand);height:2px"></i>Realizado acum.</span><span><i style="background:var(--warn);height:2px"></i>Tendência</span></div></div>
-
-      <div class="card" style="text-align:center"><h3 style="text-align:left">Avanço Geral do Projeto</h3>
-        <div id="pn-gauge" style="margin-top:4px"></div>
-        <div class="geral" id="pn-geral" style="margin-top:8px"></div></div>
-
-      <div class="card"><h3>Avanço por Ativo <small>· % da obra · realizado</small></h3>
-        <div class="dgrid" id="pn-ativos" style="margin-top:10px"></div></div>
-
-      <div class="card"><h3>Principais atividades do período</h3>
-        <ul class="cklist" style="margin-top:6px">
-          <li>Prédio da Extração — Estaqueamento / Blocos e vigas</li>
-          <li>Prédio Prensa e Pluma — Estaqueamento / Blocos e vigas</li>
-          <li>Revestimento muro de contenção — Preparação da base</li>
-          <li>Pipe Racks — Estaqueamento</li></ul></div>
-
-      <div class="card"><h3>Próximas atividades</h3>
-        <ul class="cklist" style="margin-top:6px">
-          <li>Fabricação — Estrutura Pré-Moldada <small>(20/09 a 23/12)</small></li>
-          <li>Central CIP — Estaqueamento</li>
-          <li>Montagem superestrutura pré-moldado — Extração <small>(início 14/01/27 · LB1)</small></li>
-          <li>Montagem superestrutura pré-moldado — Prensa <small>(início 03/02/27 · LB1)</small></li></ul></div>
-
-      <div class="card"><h3>Pontos de atenção</h3>
-        <ul class="cklist" style="margin-top:6px">
-          <li>Projetos de Estrutura Pré-Moldada — liberação</li>
-          <li>Fabricação dos pré-moldados (janela 20/09–23/12)</li>
-          <li>Pipe Racks — Fundações Externa</li></ul></div>
-
-      <div class="card"><h3>Segurança</h3>
-        <div style="font-size:12.5px;color:var(--ok);margin-top:6px">✓ Sem ocorrência no período.</div></div>
-
-      <div class="card"><h3>Linha do Tempo <small>· marcos (LB1)</small></h3>
-        <div class="tl" style="margin-top:8px">
-          <div class="tli"><div class="dt">01/jul/26</div><div class="tx">Início do Projeto (data-base)</div></div>
-          <div class="tli"><div class="dt">23/set/26</div><div class="tx">Conclusão da Mobilização do Canteiro</div></div>
-          <div class="tli"><div class="dt">12/nov/26</div><div class="tx">Conclusão da Reforma do Refeitório</div></div>
-          <div class="tli"><div class="dt">03/mai/27</div><div class="tx">Finaliz. estrutura metálica — Alteamento Café Torrado</div></div>
-          <div class="tli"><div class="dt">27/set/27</div><div class="tx">Finalização — Prédio da Extração</div></div>
-          <div class="tli"><div class="dt">22/mai/28</div><div class="tx">Finalização — Prédio Prensa e Pluma (última entrega)</div></div>
-          <div class="tli"><div class="dt">26/mai/28</div><div class="tx">Conclusão Geral da Obra (TAP)</div></div>
-        </div></div>
+    <!-- PAINEL (COCKPIT) -->
+    <section class="view on" id="v-painel">
+      <iframe id="painelFrame" src="painel.html" title="Painel da Obra 219" loading="eager"
+        style="position:fixed;top:0;left:0;right:0;height:calc(100dvh - 56px);width:100%;border:0;background:#F3F4F2;z-index:4"></iframe>
     </section>
 
-    <!-- PLANEJAMENTO (EAP) -->
     <section class="view" id="v-plan">
       <div class="card"><h3>Cronograma — EAP</h3>
         <p style="color:var(--mut);font-size:12px;margin:6px 0 8px">Selecione o ativo para ver as disciplinas e tarefas.</p>
@@ -278,8 +233,8 @@ select.inp{appearance:none;-webkit-appearance:none}
   </div>
 
   <div class="nav" id="nav">
-    <button data-v="home" class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>Início</button>
-    <button data-v="painel"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 13l3-3 3 3 5-6"/></svg>Painel</button>
+    <button data-v="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>Início</button>
+    <button data-v="painel" class="on"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 13l3-3 3 3 5-6"/></svg>Painel</button>
     <button data-v="plan"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Cronograma</button>
     <button data-v="pcp"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>PCP</button>
   </div>
@@ -339,17 +294,18 @@ function start(){
   $('#login').classList.add('hide');$('#app').classList.remove('hide');
   $('#hd-status').textContent='Status: '+fmtD(DATA.status);
   $('#hd-user').textContent=user.role;
-  buildHub();painel();planInit();pcpInit();rhInit();apontInit();consultaInit();muroInit();
+  buildHub();planInit();pcpInit();rhInit();apontInit();consultaInit();muroInit();
 }
 function TODAY(){return new Date().toISOString().slice(0,10);}
 
 // ---- APONTAMENTO ----
-let apArea=(PCPMAP[0]&&PCPMAP[0][0])||null,apCur=null;
+let apArea=null,apCur=null;
 const ENCARGOS=DATA.roster.filter(x=>/encarreg|supervis|l[ií]der|mestre|gerente/i.test(x.f||''));
 const MODLIST=DATA.roster.filter(x=>x.mo==='MOD');
 async function sbSel(p){try{const r=await fetch(SB_URL+'/rest/v1/'+p,{headers:sbH});return r.ok?await r.json():[];}catch(e){return[];}}
 async function sbUp(t,row){const r=await fetch(SB_URL+'/rest/v1/'+t,{method:'POST',headers:Object.assign({},sbH,{'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(row)});if(!r.ok)throw new Error(await r.text());}
 async function apontInit(){
+  if(!apArea)apArea=(PCPMAP[0]&&PCPMAP[0][0])||null;
   const el=$('#ap-date');if(!el.value)el.value=DATA.pcpStatus||DATA.status||TODAY();
   el.addEventListener('change',apontRender);
   $('#ap-areas').innerHTML=PCPMAP.map(m=>`<span class="chip" data-a="${m[0]}">${m[1]}</span>`).join('');
