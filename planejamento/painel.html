@@ -2429,7 +2429,7 @@ chips(); render();
 (function(){
   var SB_URL='https://cxwmfwnmyikieucgskvf.supabase.co';
   var SB_KEY='sb_publishable_WGM7yK051tyEK4_pr2lqig_AMBobTXg';
-  var FR2AREA={'Extração':'Extração','Prensa-Pluma':'Prensa e Pluma'};   // Muro e frentes sem lançamento ficam de fora
+  var FR2AREA={'Extração':'Extração','Prensa-Pluma':'Prensa e Pluma','CIP':'CIP','Coffee/Sanit.':'Sanitários / Coffee','Passarela':'Passarela','CCM':'Sala Painéis CCM'};   // Muro e frentes sem lançamento ficam de fora
   var MQ_AREA={'Extração':'M1','Prensa e Pluma':'M2'};
   function norm(x){ var m=(''+x).match(/\d+/); return m? String(parseInt(m[0],10)) : (''+x).trim(); }
   var idx={}; EST.piles.forEach(function(p){ idx[p.a+'|'+norm(p.id)]=p; });
