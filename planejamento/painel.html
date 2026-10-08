@@ -459,6 +459,24 @@ table.pcp{border-collapse:separate;border-spacing:0;font-size:12px}
     </div>
   </section>
   </div>
+  <section id="estExtra" data-xp="Estacas por local e diametro">
+    <div class="sh"><h2>Estacas executadas · por local e diâmetro <span class="n" id="exLiveN"></span></h2><span class="note">Ao vivo do app de estacas · use os botões para filtrar o quadro e a consulta</span></div>
+    <div class="panel">
+      <div class="filrow"><span class="flab">Área</span><div class="chips" id="exFA" role="group" aria-label="Filtrar por area"></div></div>
+      <div class="filrow" style="margin-top:8px"><span class="flab">Diâmetro</span><div class="chips" id="exFD" role="group" aria-label="Filtrar por diametro"></div></div>
+    </div>
+    <div class="panel tbl" style="margin-top:12px"><table class="mtab" id="exQuadro"><thead id="exQHead"></thead><tbody id="exQBody"></tbody></table></div>
+    <div class="sh" style="margin-top:16px"><h2>Consulta de execução <span class="n" id="exCN"></span></h2><div class="seg" role="group" aria-label="Periodo"><button type="button" id="exPerDia" aria-pressed="true">Por dia</button><button type="button" id="exPerSem" aria-pressed="false">Por semana</button></div></div>
+    <div class="panel">
+      <div class="filrow"><span class="flab" id="exPickLab">Dia</span>
+        <button type="button" class="btn" id="exPrev" aria-label="anterior">‹</button>
+        <input type="date" id="exDay" style="font-family:var(--f-mono);font-size:13px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)">
+        <select id="exWeek" hidden style="font-family:var(--f-mono);font-size:13px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)"></select>
+        <button type="button" class="btn" id="exNext" aria-label="proximo">›</button>
+        <span class="note" id="exPickInfo" style="margin-left:auto"></span></div>
+      <div id="exConsulta" style="margin-top:12px"></div>
+    </div>
+  </section>
   <section>
     <div class="two">
       <div class="panel" style="min-width:0"><h3 class="h3">Por diâmetro</h3><div id="esDiam"></div></div>
@@ -2451,10 +2469,111 @@ chips(); render();
         n++;
       });
       if (typeof estacas==='function') estacas();
+      window.__ESTROWS=rows; try{ exRender(); }catch(e){}
       var hhmm=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       badge('● ao vivo · '+n+' estacas executadas · atualizado '+hhmm, 'var(--green)');
     }catch(e){ badge('● sem conexão com o banco — mostrando a última foto da planilha', 'var(--amber)'); }
   }
+  // ---- bloco EXTRA: quadro local x diametro + consulta dia/semana (dados ao vivo) ----
+  var exA='Todas', exD='Todos', exPer='dia', exDay='', exWeek='', exUserPicked=false;
+  var DOWx=['seg','ter','qua','qui','sex','sáb'];
+  function exAreas(){ var a=Array.from(new Set(EST.piles.map(function(p){return p.a;}))); return a.sort(function(x,y){return EST.piles.filter(function(p){return p.a===y;}).length-EST.piles.filter(function(p){return p.a===x;}).length;}); }
+  function exMonday(s){ var wd=(P(s).getDay()+6)%7; return add(s,-wd); }
+  function exWeekNum(s){ var d=P(s), t=new Date(d); t.setHours(0,0,0,0); t.setDate(t.getDate()+3-((d.getDay()+6)%7)); var w1=new Date(t.getFullYear(),0,4); return 1+Math.round(((t-w1)/86400000-3+((w1.getDay()+6)%7))/7); }
+  function exMatch(p){ return (exA==='Todas'||p.a===exA) && (exD==='Todos'||p.d===+exD); }
+  function exExecList(from,to){ return EST.piles.filter(function(p){ return p.dt && p.dt>=from && p.dt<=to && exMatch(p); }); }
+  function exKpi(l,v,s){ return '<div class="kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div>'+(s?'<div class="s">'+s+'</div>':'')+'</div>'; }
+  function exChips(id,list,cur,setfn,fmt){ var el=document.getElementById(id); if(!el)return; el.innerHTML=list.map(function(k){return '<button type="button" class="chip" aria-pressed="'+(String(k)===String(cur))+'" data-k="'+k+'">'+(fmt?fmt(k):k)+'</button>';}).join(''); el.querySelectorAll('.chip').forEach(function(b){ b.onclick=function(){ setfn(b.dataset.k); exRender(); }; }); }
+  function exQuadro(){
+    var diam=[30,40,50,60].filter(function(d){return exD==='Todos'||+exD===d;});
+    var areas=(exA==='Todas'? exAreas():[exA]).filter(function(a){return EST.piles.some(function(p){return p.a===a;});});
+    document.getElementById('exQHead').innerHTML='<tr><th>Local</th>'+diam.map(function(d){return '<th>Ø'+d+'</th>';}).join('')+'<th>Total exec.</th></tr>';
+    var colEx={},colTot={},gEx=0,gTot=0,body='';
+    areas.forEach(function(a){
+      var rEx=0,rTot=0,cells='';
+      diam.forEach(function(d){
+        var ex=EST.piles.filter(function(p){return p.a===a&&p.d===d&&p.dt;}).length;
+        var tot=EST.piles.filter(function(p){return p.a===a&&p.d===d;}).length;
+        colEx[d]=(colEx[d]||0)+ex; colTot[d]=(colTot[d]||0)+tot; rEx+=ex; rTot+=tot;
+        cells+= tot? '<td class="mono"><b>'+ex+'</b><span style="color:var(--faint)">/'+tot+'</span></td>' : '<td class="mono" style="color:var(--faint)">–</td>';
+      });
+      gEx+=rEx; gTot+=rTot;
+      body+='<tr><td><b>'+esc(a)+'</b></td>'+cells+'<td class="mono"><b>'+rEx+'</b><span style="color:var(--faint)">/'+rTot+'</span></td></tr>';
+    });
+    body+='<tr style="border-top:2px solid var(--line)"><td><b>Total</b></td>'+diam.map(function(d){return '<td class="mono"><b>'+(colEx[d]||0)+'</b><span style="color:var(--faint)">/'+(colTot[d]||0)+'</span></td>';}).join('')+'<td class="mono"><b>'+gEx+'</b><span style="color:var(--faint)">/'+gTot+'</span></td></tr>';
+    document.getElementById('exQBody').innerHTML=body;
+  }
+  function exConsultaDia(){
+    var host=document.getElementById('exConsulta'); if(!host)return;
+    var d=exDay, L=exExecList(d,d);
+    document.getElementById('exCN').textContent='· '+br(d);
+    document.getElementById('exPickInfo').textContent=L.length+' estacas no dia';
+    if(!L.length){ host.innerHTML='<p class="note">Nenhuma estaca executada em '+br(d)+' para este filtro.</p>'; return; }
+    var m=L.reduce(function(s,p){return s+(p.m||0);},0), c=L.reduce(function(s,p){return s+(p.mc||0);},0);
+    var rows=(window.__ESTROWS||[]).filter(function(r){ if(r.status!=='Executada'||r.data_exec!==d)return false; var a=FR2AREA[r.frente]; if(!a)return false; if(exA!=='Todas'&&a!==exA)return false; if(exD!=='Todos'){ var p=idx[a+'|'+norm(r.nome)]; if(!p||p.d!==+exD)return false;} return true; });
+    var nfmap={}; rows.forEach(function(r){ [[r.nf1,r.vol1],[r.nf2,r.vol2]].forEach(function(x){ var nf2=(x[0]||'').trim(); if(nf2&&!(nf2 in nfmap))nfmap[nf2]=x[1]||0; }); });
+    var nfs=Object.keys(nfmap).sort(), cheg=nfs.reduce(function(s,k){return s+(nfmap[k]||0);},0);
+    var byd=[30,40,50,60].map(function(dd){ var l=L.filter(function(p){return p.d===dd;}); return {d:dd,n:l.length,m:l.reduce(function(s,p){return s+(p.m||0);},0),c:l.reduce(function(s,p){return s+(p.mc||0);},0)}; }).filter(function(x){return x.n>0;});
+    var byA={}; L.forEach(function(p){ (byA[p.a]=byA[p.a]||[]).push(p.id); });
+    var h='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">'+exKpi('Estacas',L.length,br(d))+exKpi('Metros',nf(m,0)+' m','')+exKpi('Concreto utilizado',nf(c,1)+' m³','')+exKpi('Notas fiscais',nfs.length,nf(cheg,1)+' m³ chegaram')+'</div>';
+    h+='<div class="tbl" style="margin-top:10px"><table class="mtab"><thead><tr><th>Diâmetro</th><th>Estacas</th><th>Metros</th><th>Concreto (m³)</th></tr></thead><tbody>'+byd.map(function(x){return '<tr><td class="mono">Ø'+x.d+'</td><td class="mono">'+x.n+'</td><td class="mono">'+nf(x.m,0)+'</td><td class="mono">'+nf(x.c,1)+'</td></tr>';}).join('')+'</tbody></table></div>';
+    h+=Object.keys(byA).map(function(a){return '<div style="margin-top:10px"><b>'+esc(a)+'</b> <span class="note">('+byA[a].length+')</span><div class="mono" style="font-size:12.5px;color:var(--muted);margin-top:3px">'+byA[a].map(esc).join(' · ')+'</div></div>';}).join('');
+    if(nfs.length) h+='<div style="margin-top:10px"><b>Notas fiscais do dia</b><div style="margin-top:4px">'+nfs.map(function(k){return '<span class="pill blue" style="margin:2px 4px 2px 0">NF '+esc(k)+' · '+nf(nfmap[k],1)+' m³</span>';}).join('')+'</div>';
+    host.innerHTML=h;
+  }
+  function exConsultaSem(){
+    var host=document.getElementById('exConsulta'); if(!host)return;
+    var mon=exWeek||exMonday(exDay), sun=add(mon,6), L=exExecList(mon,sun);
+    document.getElementById('exCN').textContent='· Sem '+exWeekNum(mon)+' · '+br(mon)+'–'+br(sun);
+    document.getElementById('exPickInfo').textContent=L.length+' estacas na semana';
+    if(!L.length){ host.innerHTML='<p class="note">Nenhuma estaca executada nesta semana para este filtro.</p>'; return; }
+    var m=L.reduce(function(s,p){return s+(p.m||0);},0), c=L.reduce(function(s,p){return s+(p.mc||0);},0);
+    var days=[0,1,2,3,4,5].map(function(i){var dd=add(mon,i); var l=L.filter(function(p){return p.dt===dd;}); return {lab:DOWx[i],d:dd,n:l.length,c:l.reduce(function(s,p){return s+(p.mc||0);},0)};});
+    var nd=days.filter(function(x){return x.n>0;}).length;
+    var byA={}; L.forEach(function(p){byA[p.a]=(byA[p.a]||0)+1;});
+    var byd=[30,40,50,60].map(function(dd){var l=L.filter(function(p){return p.d===dd;});return {d:dd,n:l.length};}).filter(function(x){return x.n>0;});
+    var h='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">'+exKpi('Estacas',L.length,'')+exKpi('Metros',nf(m,0)+' m','')+exKpi('Concreto',nf(c,1)+' m³','')+exKpi('Dias trabalhados',nd,'')+'</div>';
+    h+='<div class="tbl" style="margin-top:10px"><table class="mtab"><thead><tr><th>Dia</th><th>Estacas</th><th>Concreto (m³)</th></tr></thead><tbody>'+days.map(function(x){return '<tr><td class="mono">'+x.lab+' '+br(x.d)+'</td><td class="mono">'+(x.n||'–')+'</td><td class="mono">'+(x.c?nf(x.c,1):'–')+'</td></tr>';}).join('')+'</tbody></table></div>';
+    h+='<div style="margin-top:10px"><b>Por local</b><div style="margin-top:4px">'+Object.keys(byA).map(function(a){return '<span class="pill gray" style="margin:2px 4px 2px 0">'+esc(a)+': '+byA[a]+'</span>';}).join('')+' '+byd.map(function(x){return '<span class="pill blue" style="margin:2px 4px 2px 0">Ø'+x.d+': '+x.n+'</span>';}).join('')+'</div>';
+    host.innerHTML=h;
+  }
+  function exBuildWeeks(){
+    var sel=document.getElementById('exWeek'); if(!sel)return;
+    var set={}; EST.piles.forEach(function(p){ if(p.dt) set[exMonday(p.dt)]=1; });
+    var ds=Object.keys(set).sort();
+    sel.innerHTML=ds.map(function(mon){ return '<option value="'+mon+'">Sem '+exWeekNum(mon)+' · '+br(mon)+'–'+br(add(mon,6))+'</option>'; }).join('');
+    if(!exWeek || ds.indexOf(exWeek)<0) exWeek=ds[ds.length-1]||exMonday(exDay);
+    sel.value=exWeek;
+  }
+  function exWire(){
+    if(exWire.done)return; exWire.done=true;
+    var pd=document.getElementById('exPerDia'), ps=document.getElementById('exPerSem');
+    if(pd)pd.onclick=function(){exPer='dia';exRender();};
+    if(ps)ps.onclick=function(){exPer='sem';exRender();};
+    var dd=document.getElementById('exDay'); if(dd)dd.onchange=function(){exUserPicked=true;exDay=dd.value;exRender();};
+    var wk=document.getElementById('exWeek'); if(wk)wk.onchange=function(){exUserPicked=true;exWeek=wk.value;exRender();};
+    var pv=document.getElementById('exPrev'), nx=document.getElementById('exNext');
+    if(pv)pv.onclick=function(){ exUserPicked=true; if(exPer==='dia')exDay=add(exDay,-1); else exWeek=add(exWeek||exMonday(exDay),-7); exRender(); };
+    if(nx)nx.onclick=function(){ exUserPicked=true; if(exPer==='dia')exDay=add(exDay,1); else exWeek=add(exWeek||exMonday(exDay),7); exRender(); };
+  }
+  function exRender(){
+    if(!document.getElementById('exQBody'))return;
+    exWire();
+    var _lm=EST.piles.reduce(function(mm,p){return p.dt&&p.dt>mm?p.dt:mm;},'')||iso(new Date()); if(!exUserPicked) exDay=_lm; else if(!exDay) exDay=_lm;
+    var nex=EST.piles.filter(function(p){return p.dt;}).length;
+    document.getElementById('exLiveN').textContent='· '+nex+' executadas';
+    exChips('exFA',['Todas'].concat(exAreas()),exA,function(v){exA=v;},null);
+    exChips('exFD',['Todos',30,40,50,60],exD,function(v){exD=v;},function(k){return k==='Todos'?'Todos':'Ø'+k;});
+    exQuadro();
+    document.getElementById('exPerDia').setAttribute('aria-pressed',exPer==='dia');
+    document.getElementById('exPerSem').setAttribute('aria-pressed',exPer==='sem');
+    document.getElementById('exDay').hidden=exPer!=='dia';
+    document.getElementById('exWeek').hidden=exPer!=='sem';
+    document.getElementById('exPickLab').textContent=exPer==='dia'?'Dia':'Semana';
+    if(exPer==='dia'){ document.getElementById('exDay').value=exDay; exConsultaDia(); }
+    else { exBuildWeeks(); exConsultaSem(); }
+  }
+  try{ exRender(); }catch(e){}
   badge('carregando execução ao vivo…','var(--muted)');
   hydrate(); setInterval(hydrate, 90000);
 })();
