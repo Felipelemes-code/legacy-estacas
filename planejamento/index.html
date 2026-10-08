@@ -152,7 +152,7 @@ select.inp{appearance:none;-webkit-appearance:none}
     <!-- PAINEL (COCKPIT) -->
     <section class="view on" id="v-painel">
       <iframe id="painelFrame" src="painel.html" title="Painel da Obra 219" loading="eager"
-        style="position:fixed;top:0;left:0;right:0;height:calc(100dvh - 56px);width:100%;border:0;background:#F3F4F2;z-index:4"></iframe>
+        style="width:100%;min-height:100vh;border:0;display:block;background:#F3F4F2"></iframe>
     </section>
 
     <section class="view" id="v-plan">
@@ -695,4 +695,20 @@ function pcpRender(){
   });
   $('#pcp-list').innerHTML=html||'<p style="color:var(--mut);font-size:13px">Sem atividades.</p>';
 }
+</script>
+
+<script>
+/* auto-altura do painel: o iframe cresce com o conteudo e a PAGINA rola (melhor em TV/sem dvh) */
+(function(){
+  var fr=document.getElementById('painelFrame'); if(!fr) return;
+  function sz(){ try{ var d=fr.contentWindow.document; var h=Math.max(d.documentElement.scrollHeight, d.body?d.body.scrollHeight:0); if(h>200) fr.style.height=(h+24)+'px'; }catch(e){} }
+  fr.addEventListener('load',function(){ sz();
+    try{ var d=fr.contentWindow.document;
+      if(window.ResizeObserver){ try{ new ResizeObserver(sz).observe(d.documentElement); }catch(e){} }
+      d.addEventListener('click',function(){ setTimeout(sz,150); });
+    }catch(e){}
+    setInterval(sz,1200);
+  });
+  setTimeout(sz,1500);
+})();
 </script>
