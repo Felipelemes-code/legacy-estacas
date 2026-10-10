@@ -584,7 +584,7 @@ const TST=ROSTER.filter(x=>/segurança|seguranca|TST/i.test(x.f||''));  // tec
 let efDay=null, efLider='', efTst='', efPresent=new Set(), efExtra=[], efFilter='';
 const pkey=x=>x.n+'|'+(x.e||'');
 function parseEq(raw){try{const d=JSON.parse(raw||'[]');if(Array.isArray(d))return{eq:d,lider:null,tst:null};return{eq:d.eq||[],lider:d.lider||null,tst:d.tst||null};}catch(_){return{eq:[],lider:null,tst:null};}}
-function efBase(){return ROSTER;}   // todos aparecem na busca
+function efBase(){return ROSTER.filter(x=>x.mo==='MDD');}   // equipe = mao de obra direta completa
 function efAll(){return efBase().concat(efExtra);}
 async function efLoad(day){
  efDay=day; efPresent=new Set(); efLider=''; efTst=''; efExtra=[];
