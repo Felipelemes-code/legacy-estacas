@@ -145,6 +145,7 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
 .eqhead{font-weight:800;font-size:13px;margin:4px 2px 8px}
 .eqrow{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;margin-bottom:8px}
 .eqrow .eq-tipo{width:100%;margin-bottom:8px;font-weight:600}
+.eqrow .eq-forn{width:100%;margin-bottom:8px}
 .eq-times{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
 .eq-times label{display:flex;flex-direction:column;font-size:11px;color:var(--muted);font-weight:700;gap:3px}
 .eq-times input[type=time]{width:118px}
@@ -279,6 +280,7 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
       <div class="eqhead"><b>Equipamentos do dia</b> <small id="eq-count" style="color:var(--muted)"></small></div>
       <div id="eq-list"></div>
       <datalist id="eqtipos"></datalist>
+      <datalist id="eqforns"></datalist>
       <button class="btn gh" id="eq-add" style="width:100%;margin-top:8px;flex:1"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Adicionar equipamento</button>
       <button class="btn pri" id="eq-save" style="margin:14px 0 6px"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Salvar equipamentos do dia</button>
     </section>
@@ -663,16 +665,18 @@ $('#ef-save').onclick=async()=>{const eq=efAll().filter(x=>efPresent.has(pkey(x)
 // ===== EQUIPAMENTOS =====
 const EQTIPOS=['Perfuratriz Hélice Contínua','Guindaste','Caminhão Munck','Caminhão Betoneira','Bomba de Concreto (lança)','Bomba de Concreto (estacionária)','Retroescavadeira','Escavadeira Hidráulica','Mini Carregadeira (Bobcat)','Caminhão Basculante','Caminhão Prancha','Caminhão Pipa','Manipulador Telescópico','Gerador','Compressor de Ar','Rolo Compactador'];
 let eqDay=null, eqItems=[];
+const EQFORN=['ENGEKO'].concat([...new Set(ROSTER.filter(x=>x.t).map(x=>x.e).filter(Boolean))].sort());
 if($('#eqtipos'))$('#eqtipos').innerHTML=EQTIPOS.map(t=>`<option value="${t}">`).join('');
+if($('#eqforns'))$('#eqforns').innerHTML=EQFORN.map(t=>`<option value="${t}">`).join('');
 function eqDur(a,b){if(!a||!b)return'';const p=s=>s.split(':').map(Number);const[h1,m1]=p(a),[h2,m2]=p(b);let t=(h2*60+m2)-(h1*60+m1);if(t<0)t+=1440;return Math.floor(t/60)+'h'+String(t%60).padStart(2,'0');}
 function eqEsc(s){return(s||'').replace(/"/g,'&quot;');}
-function eqRowHTML(it,i,ro){return `<div class="eqrow"><input class="inp eq-tipo" list="eqtipos" data-i="${i}" placeholder="Tipo de equipamento" value="${eqEsc(it.tipo)}" ${ro?'disabled':''}><div class="eq-times"><label>Início<input class="inp eq-ini" type="time" data-i="${i}" value="${it.ini||''}" ${ro?'disabled':''}></label><label>Fim<input class="inp eq-fim" type="time" data-i="${i}" value="${it.fim||''}" ${ro?'disabled':''}></label><span class="eq-dur">${eqDur(it.ini,it.fim)}</span>${ro?'':`<button class="eq-rm" data-rm="${i}" title="Remover">×</button>`}</div></div>`;}
+function eqRowHTML(it,i,ro){return `<div class="eqrow"><input class="inp eq-tipo" list="eqtipos" data-i="${i}" placeholder="Tipo de equipamento" value="${eqEsc(it.tipo)}" ${ro?'disabled':''}><input class="inp eq-forn" list="eqforns" data-i="${i}" placeholder="Fornecedor do equipamento" value="${eqEsc(it.forn)}" ${ro?'disabled':''}><div class="eq-times"><label>Início<input class="inp eq-ini" type="time" data-i="${i}" value="${it.ini||''}" ${ro?'disabled':''}></label><label>Fim<input class="inp eq-fim" type="time" data-i="${i}" value="${it.fim||''}" ${ro?'disabled':''}></label><span class="eq-dur">${eqDur(it.ini,it.fim)}</span>${ro?'':`<button class="eq-rm" data-rm="${i}" title="Remover">×</button>`}</div></div>`;}
 function eqCount(){const n=eqItems.filter(x=>x.tipo&&x.tipo.trim()).length;if($('#eq-count'))$('#eq-count').textContent=n?('· '+n+' equipamento(s)'):'';}
 async function eqLoad(day){
  eqDay=day;eqItems=[];
  if(sbOn()){try{const r=await fetch(`${SB_URL}/rest/v1/equipamentos?data=eq.${day}&select=*`,{headers:sbHead});const rows=await r.json();if(rows&&rows[0]&&rows[0].itens_json){try{eqItems=JSON.parse(rows[0].itens_json)||[];}catch(_){}}}catch(e){}}
  if(!eqItems.length){try{const ls=localStorage.getItem('equip_'+day);if(ls){const a=JSON.parse(ls);if(Array.isArray(a)&&a.length)eqItems=a;}}catch(_){}}
- if(!eqItems.length)eqItems=[{tipo:'',ini:'',fim:''}];
+ if(!eqItems.length)eqItems=[{tipo:'',forn:'',ini:'',fim:''}];
 }
 function eqRender(){
  if(!eqDay){const d=new Date().toISOString().slice(0,10);if($('#eq-date'))$('#eq-date').value=d;eqLoad(d).then(eqRender);return;}
@@ -686,12 +690,13 @@ function eqRender(){
 if($('#eq-list')){
  $('#eq-list').addEventListener('input',e=>{const el=e.target;const i=+el.dataset.i;if(isNaN(i)||!eqItems[i])return;
   if(el.classList.contains('eq-tipo')){eqItems[i].tipo=el.value;eqCount();}
+  else if(el.classList.contains('eq-forn')){eqItems[i].forn=el.value;}
   else if(el.classList.contains('eq-ini')){eqItems[i].ini=el.value;const d=el.closest('.eqrow').querySelector('.eq-dur');if(d)d.textContent=eqDur(eqItems[i].ini,eqItems[i].fim);}
   else if(el.classList.contains('eq-fim')){eqItems[i].fim=el.value;const d=el.closest('.eqrow').querySelector('.eq-dur');if(d)d.textContent=eqDur(eqItems[i].ini,eqItems[i].fim);}
  });
- $('#eq-list').addEventListener('click',e=>{const b=e.target.closest('.eq-rm');if(!b||!canEdit())return;const i=+b.dataset.rm;eqItems.splice(i,1);if(!eqItems.length)eqItems=[{tipo:'',ini:'',fim:''}];eqRender();});
+ $('#eq-list').addEventListener('click',e=>{const b=e.target.closest('.eq-rm');if(!b||!canEdit())return;const i=+b.dataset.rm;eqItems.splice(i,1);if(!eqItems.length)eqItems=[{tipo:'',forn:'',ini:'',fim:''}];eqRender();});
 }
-if($('#eq-add'))$('#eq-add').onclick=()=>{if(!canEdit())return;eqItems.push({tipo:'',ini:'',fim:''});eqRender();};
+if($('#eq-add'))$('#eq-add').onclick=()=>{if(!canEdit())return;eqItems.push({tipo:'',forn:'',ini:'',fim:''});eqRender();};
 if($('#eq-date'))$('#eq-date').addEventListener('change',e=>{eqLoad(e.target.value).then(eqRender);});
 if($('#eq-save'))$('#eq-save').onclick=async()=>{const items=eqItems.filter(x=>x.tipo&&x.tipo.trim());setSync('...');
  try{localStorage.setItem('equip_'+eqDay,JSON.stringify(items));}catch(_){}
@@ -701,7 +706,7 @@ if($('#eq-copy'))$('#eq-copy').onclick=async()=>{if(!sbOn()||!eqDay)return;setSy
  try{const r=await fetch(`${SB_URL}/rest/v1/equipamentos?data=lt.${eqDay}&order=data.desc&limit=1&select=*`,{headers:sbHead});const rows=await r.json();
   if(!rows||!rows[0]){setSync('ok');toast('Nenhum dia anterior com equipamentos');return;}
   let it=[];try{it=JSON.parse(rows[0].itens_json||'[]')||[];}catch(_){}
-  eqItems=it.length?it.map(x=>({tipo:x.tipo||'',ini:x.ini||'',fim:x.fim||''})):[{tipo:'',ini:'',fim:''}];
+  eqItems=it.length?it.map(x=>({tipo:x.tipo||'',forn:x.forn||'',ini:x.ini||'',fim:x.fim||''})):[{tipo:'',forn:'',ini:'',fim:''}];
   eqRender();setSync('ok');toast('📋 Equipamentos de '+rows[0].data.split('-').reverse().join('/')+' copiados');
  }catch(e){setSync('err');toast('Falha ao buscar dia anterior');}};
 
