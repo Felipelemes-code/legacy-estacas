@@ -722,6 +722,12 @@ document.addEventListener('click',e=>{const jb=e.target.closest&&e.target.closes
 function fmtBR(d){if(!d)return'';const a=d.split('-');return a[2]+'/'+a[1]+'/'+a[0];}
 function nBR(x){return x.toFixed(2).replace('.',',');}
 async function efInfo(day){if(!sbOn())return null;try{const r=await fetch(`${SB_URL}/rest/v1/efetivo?data=eq.${day}&select=*`,{headers:sbHead});const rows=await r.json();if(rows&&rows[0]){const p=parseEq(rows[0].equipe_json);return{lider:rows[0].lider||p.lider||'',tst:p.tst||'',n:p.eq.length,eq:p.eq};}}catch(_){}return null;}
+async function eqInfo(day){
+ let items=[];
+ if(sbOn()){try{const r=await fetch(`${SB_URL}/rest/v1/equipamentos?data=eq.${day}&select=itens_json`,{headers:sbHead});const rows=await r.json();if(rows&&rows[0]&&rows[0].itens_json){try{items=JSON.parse(rows[0].itens_json)||[];}catch(_){}}}catch(_){}}
+ if(!items.length){try{const ls=localStorage.getItem('equip_'+day);if(ls){const a=JSON.parse(ls);if(Array.isArray(a))items=a;}}catch(_){}}
+ return items.filter(x=>x&&x.tipo&&x.tipo.trim());
+}
 async function waResumo(){
  const day=$('#wa-date').value||new Date().toISOString().slice(0,10);
  const list=PILES.filter(p=>{const s=state[p.k];return s&&s.st==='Executada'&&s.data===day;});
@@ -736,12 +742,15 @@ async function waResumo(){
  let efBlk='';
  if(ef){efBlk=`\n👷 Encarregado: ${ef.lider||'—'}`;
   if(ef.eq&&ef.eq.length){efBlk+=`\n👥 Equipe do dia (${ef.eq.length}):\n`+ef.eq.map(x=>`• ${x.n}${x.f?' — '+x.f:''}${x.t?' ('+(x.e||'terceiro')+')':''}`).join('\n');}}
+ const eq=await eqInfo(day);
+ let eqBlk='';
+ if(eq&&eq.length){eqBlk=`\n🚜 Equipamentos (${eq.length}):\n`+eq.map(e=>{const h=(e.ini||e.fim)?` ⏱ ${e.ini||'—'}→${e.fim||'—'}`:'';const f=e.forn?' — '+e.forn:'';return `• ${e.tipo}${f}${h}`;}).join('\n');}
  const cdd=concDia()[day];let concBlk='';
  if(cdd){const cheg=cdd.cheg,util=cdd.util;
   concBlk=`\n\n🧱 Concreto do dia:\n• Chegou (NF): ${nBR(cheg)} m³\n• Utilizado real: ${nBR(util)} m³`;}
  const head=`🏗️ ESTACAS HÉLICE — Legacy / Nestlé Araras\n📅 ${fmtBR(day)}\n✅ Executadas: ${list.length}`;
  const body=list.length?'\n\n'+lines.join('\n'):'\n\n(nenhuma estaca executada nesta data)';
- const foot=`${concBlk}${efBlk}\n📝 Apontador: ${user?user.name:''}`;
+ const foot=`${concBlk}${efBlk}${eqBlk}\n📝 Apontador: ${user?user.name:''}`;
  return head+body+foot;}
 // CONSULTA POR DIA
 async function consultaRender(){
