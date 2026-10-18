@@ -151,6 +151,19 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
 .eq-times input[type=time]{width:118px}
 .eq-dur{font-weight:800;color:#0f7a3a;font-size:13px;margin-left:auto;align-self:center;min-width:46px;text-align:right}
 .eq-rm{background:#fde8e6;color:#b93a2e;border:1px solid #f3c4bd;border-radius:9px;width:30px;height:30px;font-size:18px;line-height:1;cursor:pointer;flex:0 0 auto}
+.cs-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+@media(max-width:760px){.cs-grid{grid-template-columns:1fr}}
+.cs-pane h3{margin:0 0 8px}
+.cs-sub{font-weight:800;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin:12px 0 5px}
+table.cs-tb{border-collapse:collapse;width:100%;font-size:12.5px;margin-bottom:2px}
+table.cs-tb th,table.cs-tb td{border:1px solid var(--line);padding:5px 7px;text-align:center}
+table.cs-tb th{background:#2e3192;color:#fff;font-size:11px}
+table.cs-tb td.l,table.cs-tb th.l{text-align:left}
+table.cs-tb td.tot{font-weight:800}
+table.cs-tb tr.grp td{background:#eef1f7;font-weight:800}
+:root[data-theme="dark"] table.cs-tb tr.grp td{background:#1e2a35}
+.cs-erow{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:5px 2px;border-bottom:1px solid var(--line)}
+.cs-erow span{color:var(--muted)}
 .jbtn{flex:none;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:14px;line-height:1;margin-left:2px}
 .jbtn.has{background:var(--warn-bg);border-color:var(--warn)}
 #mapbox{overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff;-webkit-overflow-scrolling:touch}
@@ -238,7 +251,7 @@ textarea.inp{resize:vertical;min-height:46px;line-height:1.4}
     <!-- CONSULTA POR DIA -->
     <section class="view" id="v-consulta">
       <div class="card">
-        <h3>Consulta por dia <small>· o que foi feito na data</small></h3>
+        <h3>Consulta <small>· dia × acumulado por diâmetro / profundidade / área</small></h3>
         <div class="fld" style="margin-top:8px"><label>Selecione o dia</label><input type="date" class="inp" id="cs-date"></div>
       </div>
       <div id="cs-out"></div>
@@ -432,8 +445,8 @@ function render(){const rows=filtered(),show=rows.slice(0,limit);
  $('#list').innerHTML=show.map(p=>{const ex=isExec(p.k);
   return `<div class="est ${ex?'done':''}" data-k="${p.k}"><div class="id">${p.id}</div><div class="info"><div>${p.fr}</div><div class="m">Ø${p.d} mm · ${p.c} m</div></div>${ex?`<span class="st st-exec">Executada</span>`:`<span class="st st-prog">Programada</span>`}<div class="go"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div></div>`;}).join('')||`<div style="text-align:center;color:var(--muted);padding:30px">Nenhuma estaca.</div>`;
  $('#more').style.display=rows.length>limit?'block':'none';$$('#list .est').forEach(e=>e.onclick=()=>openSheet(e.dataset.k));kpis();}
-function kpis(){const real=PILES.filter(p=>isExec(p.k)).length;const conc=Object.values(concDia()).reduce((s,o)=>s+(o.cheg||0),0);
- $('#k-prev').textContent=PILES.length;$('#k-real').textContent=real;$('#k-av').textContent=Math.round(real/PILES.length*100)+'%';$('#k-conc').textContent=conc.toFixed(1);$('#pbar').style.width=(real/PILES.length*100)+'%';}
+function kpis(){const base=PILES.filter(p=>!p.x);const prev=base.length;const real=base.filter(p=>isExec(p.k)).length;const conc=Object.values(concDia()).reduce((s,o)=>s+(o.cheg||0),0);
+ $('#k-prev').textContent=prev;$('#k-real').textContent=real;$('#k-av').textContent=Math.round(real/prev*100)+'%';$('#k-conc').textContent=conc.toFixed(1);$('#pbar').style.width=(real/prev*100)+'%';}
 $('#q').oninput=()=>{limit=40;render();};
 $('#togg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$$('#togg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');curStatus=b.dataset.s;limit=40;render();});
 $('#more').onclick=()=>{limit+=40;render();};
@@ -756,19 +769,32 @@ async function waResumo(){
 async function consultaRender(){
  const el=$('#cs-date');if(!el)return;if(!el.value)el.value=TODAY();
  const day=el.value;
- const list=PILES.filter(p=>{const s=state[p.k];return s&&s.st==='Executada'&&s.data===day;}).sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true}));
- const cdd=concDia()[day]||{cheg:0,util:0,nf:{}};
- const nfs=Object.keys(cdd.nf||{});
- const ef=await efInfo(day);
- const tile=(v,l,c)=>`<div class="kc" style="flex:1;min-width:108px"><div class="v num"${c?` style="color:${c}"`:''}>${v}</div><div class="l">${l}</div></div>`;
- const kpis=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 12px">${tile(list.length,'Estacas executadas')}${tile(nBR(cdd.cheg||0)+' m³','Chegou (NF)','var(--brand)')}${tile(nBR(cdd.util||0)+' m³','Utilizado real','var(--ok)')}${tile(ef?ef.n:'—','Equipe (MOD)')}</div>`;
- let estBlk;
- if(list.length){estBlk=list.map(p=>{const s=state[p.k];const bp=[s.bloco&&('Bloco '+s.bloco),s.pilar&&('Pilar '+s.pilar)].filter(Boolean).join(' · ');const bt=[s.bt1,s.bt2].filter(Boolean).join('+');const nf=[s.nf1,s.nf2].filter(Boolean).join(', ');const hora=(s.ini||s.fim)?`⏱ ${s.ini||'—'}→${s.fim||'—'}`:'';const v=volUtil(s);
-   return `<div style="border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin:6px 0"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${p.id}</b><span style="color:var(--muted);font-size:12px">${p.fr} · Ø${p.d} · ${nBR((s.comp)||p.c)} m</span></div>${bp?`<div style="font-size:13px;margin-top:3px">${bp}</div>`:''}<div style="font-size:12.5px;color:var(--muted);margin-top:3px">${bt?'BT '+bt+' · ':''}${nf?'NF '+nf+' · ':''}${v?nBR(v)+' m³ ':''}${hora}</div>${s.ocor?`<div style="font-size:12.5px;color:var(--crit);margin-top:3px">📝 ${s.ocor}</div>`:''}</div>`;}).join('');}
- else estBlk=`<div style="color:var(--muted);font-size:13px;padding:6px 2px">Nenhuma estaca executada nesta data.</div>`;
- const nfBlk=nfs.length?`<div class="card"><h3>Notas fiscais do dia <small>· ${nBR(cdd.cheg||0)} m³ chegaram</small></h3>`+nfs.sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(nf=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 2px;border-bottom:1px solid var(--line)"><span>NF ${nf}</span><b>${nBR(cdd.nf[nf])} m³</b></div>`).join('')+`</div>`:'';
- const efBlk=(ef&&ef.eq&&ef.eq.length)?`<div class="card"><h3>Equipe do dia <small>· líder ${ef.lider||'—'}</small></h3>`+ef.eq.map(x=>`<div style="font-size:13px;padding:3px 2px">• ${x.n}${x.f?' — '+x.f:''}${x.t?` <span style="color:var(--muted)">(${x.e||'terceiro'})</span>`:''}</div>`).join('')+`</div>`:'';
- $('#cs-out').innerHTML=`<div class="card"><h3>${fmtBR(day)}</h3>${kpis}${estBlk}</div>${nfBlk}${efBlk}`;}
+ const compOf=p=>{const s=state[p.k];return (s&&s.comp)||p.c||0;};
+ const fmtM=x=>x?(Number.isInteger(+x)?(+x)+' m':nBR(x)+' m'):'—';
+ const execDia=PILES.filter(p=>{const s=state[p.k];return !p.x&&s&&s.st==='Executada'&&s.data===day;});
+ const execAcc=PILES.filter(p=>{const s=state[p.k];return !p.x&&s&&s.st==='Executada'&&s.data&&s.data<=day;});
+ function resumo(arr){const byAD={},byD={},byA={},byDm={},byP={};let metros=0;
+   arr.forEach(p=>{const d=p.d||'—',a=p.fr||'—',c=+compOf(p)||0;metros+=c;
+     byD[d]=(byD[d]||0)+1;byA[a]=(byA[a]||0)+1;byDm[d]=(byDm[d]||0)+c;
+     (byAD[a]=byAD[a]||{})[d]=(byAD[a][d]||0)+1;byP[c]=(byP[c]||0)+1;});
+   return {n:arr.length,byAD,byD,byA,byDm,byP,metros};}
+ const rd=resumo(execDia),ra=resumo(execAcc);
+ const dcols=[...new Set([...Object.keys(rd.byD),...Object.keys(ra.byD)])].filter(d=>d!=='—').map(Number).sort((a,b)=>a-b);
+ function matrix(r){const areas=Object.keys(r.byAD).sort();if(!areas.length)return '<div style="color:var(--muted);font-size:12.5px;padding:6px 2px">Nenhuma estaca.</div>';
+   let h='<table class="cs-tb"><thead><tr><th class="l">Área</th>'+dcols.map(d=>`<th>Ø${d}</th>`).join('')+'<th>Total</th></tr></thead><tbody>';
+   areas.forEach(a=>{const row=r.byAD[a]||{};const tot=Object.values(row).reduce((s,x)=>s+x,0);
+     h+=`<tr><td class="l">${a}</td>`+dcols.map(d=>`<td>${row[d]||'·'}</td>`).join('')+`<td class="tot">${tot}</td></tr>`;});
+   h+=`<tr class="grp"><td class="l">Total</td>`+dcols.map(d=>`<td>${r.byD[d]||'·'}</td>`).join('')+`<td class="tot">${r.n}</td></tr></tbody></table>`;return h;}
+ function quadroDiam(r){let h='<table class="cs-tb"><thead><tr><th class="l">Diâmetro</th><th>Qtd</th><th>Metros</th></tr></thead><tbody>';
+   dcols.forEach(d=>{if(!r.byD[d])return;h+=`<tr><td class="l">Ø${d} mm</td><td>${r.byD[d]}</td><td>${nBR(r.byDm[d])} m</td></tr>`;});
+   h+=`<tr class="grp"><td class="l">Total</td><td>${r.n}</td><td>${nBR(r.metros)} m</td></tr></tbody></table>`;return h;}
+ function quadroProf(r){const ks=Object.keys(r.byP).map(Number).sort((a,b)=>a-b);if(!ks.length)return '';
+   let h='<table class="cs-tb"><thead><tr><th class="l">Profundidade</th><th>Qtd</th></tr></thead><tbody>';
+   ks.forEach(c=>{h+=`<tr><td class="l">${fmtM(c)}</td><td>${r.byP[c]}</td></tr>`;});return h+'</tbody></table>';}
+ const listDia=execDia.length?execDia.slice().sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true})).map(p=>`<div class="cs-erow"><b>${p.id}</b><span>${p.fr} · Ø${p.d} · ${fmtM(compOf(p))}</span></div>`).join(''):'<div style="color:var(--muted);font-size:12.5px;padding:6px 2px">Nenhuma estaca executada neste dia.</div>';
+ const paneAcc=`<div class="card cs-pane"><h3>📊 Acumulado até ${fmtBR(day)} <small>· ${ra.n} estacas · ${nBR(ra.metros)} m</small></h3><div class="cs-sub">Por área × diâmetro</div>${matrix(ra)}<div class="cs-sub">Por diâmetro</div>${quadroDiam(ra)}<div class="cs-sub">Por profundidade</div>${quadroProf(ra)}</div>`;
+ const paneDia=`<div class="card cs-pane"><h3>📅 No dia ${fmtBR(day)} <small>· ${rd.n} estacas</small></h3><div class="cs-sub">Por área × diâmetro</div>${matrix(rd)}<div class="cs-sub">Estacas do dia</div>${listDia}</div>`;
+ $('#cs-out').innerHTML=`<div class="cs-grid">${paneAcc}${paneDia}</div>`;}
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='cs-date')consultaRender();});
 function initWA(){const el=$('#wa-date');if(el&&!el.value)el.value=new Date().toISOString().slice(0,10);}
 document.addEventListener('click',async e=>{if(e.target.closest&&e.target.closest('#btn-wa')){const txt=await waResumo();
